@@ -5,6 +5,9 @@ Simple COVID-19 charting code, single-page HTML javascript.
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+   Library dependencies, loaded from various CDNs.
+ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.js" integrity="sha256-iAuxnf8Cwr0yrQkpf6oQG4PaL/oVmoer6V/RfX2KQws=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
@@ -43,9 +46,12 @@ h1 { font-size: 14pt; }
 </style>
 </head>
 <body>
+<!--
+  User interface, using vue template idioms.
+-->
 <div id="app" class="pane-menu">
 <h1>USA COVID-19 Time Series</h1>
-<p>Whole-country stats along with the top 10 states are shown;
+<p>Whole-country stats an top 10 states are shown;
 data are pulled directly from
 <a href="https://github.com/CSSEGISandData/COVID-19/" >Johns Hopkins CSSE</a>.
 <p>
@@ -77,9 +83,9 @@ hover on points for specific numbers.</p>
 ><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
 ><div class="pane-credit">
 
-<p>For policymakers, the chart lets you look at USA data in the same way the <a href="https://www.ft.com/coronavirus-latest">Financial Times COVID-19 plot by John Murdoch</a> lets you see different policies internationally. Select the logarithmic totals with a '>=100' starting threshold, so that "day zero" is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and therefore the slopes, will reveal the differences.
+<p>For policymakers, the chart lets you see USA data in the same way the <a href="https://www.ft.com/coronavirus-latest">Financial Times COVID-19 plot by John Murdoch</a> compares policies internationally. Select the logarithmic totals with a '>=100' starting threshold, so that "day zero" is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and therefore the slopes, will reveal the differences.
 
-<p>The other point-of-view is the doctors-eye view. Doctors do not have time to worry about long-term policy, because they need to deal with the patients who walk into the ER and who who lie sick in ICU beds. To see these numbers, switch to the 'delta' 'linear' view in the current month. The huge waves show why the panic is justified, and why minor policy changes translate into massive effects on the ground.
+<p>The other point-of-view is the doctors-eye view. Doctors must deal with the patients who walk into the ER and who who lie sick in ICU beds. To anticipate these numbers, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
 
 <p>The graph automatically updates every day based on current data. Please share. And please isolate.
 
@@ -87,18 +93,26 @@ hover on points for specific numbers.</p>
 
 <p>Code is at <a href="https://github.com/davidbau/covid-19-chart"
 >https://github.com/davidbau/covid-19-chart</a>.
-
-<p>Open source. (MIT license.)
-<p>- <a href="http://davidbau.com/">David Bau</a>
-</div
-></body>
+Open source. (MIT license.)
+<address>- <a href="http://davidbau.com/">David Bau</a></address>
+</div></body>
 <script>
+// Globals:
 var csse = null, chart = null;
+
+//////////////////////////////////////////////////////////////////////
+// Data loading.
+// Loads directly from the Johns Hopkins CSSE COVID-19 data feed on
+// github. They publish three time series: "Confirmed", "Deaths", and
+// "Recovered".  The data in the last category seems inconsistent
+// so is not included in the current graph.
+//////////////////////////////////////////////////////////////////////
 function csv_url(seriesname) {
   var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
     "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
   return ts_base_url + "time_series_19-covid-" + seriesname + ".csv";
 }
+
 function load_csse_data(loaded) {
   var results = {}, pending = 3;
   'Confirmed Deaths Recovered'.split(' ').map(s => {
@@ -112,15 +126,14 @@ function load_csse_data(loaded) {
     })
   })
 }
-function parse_date(name) {
-  return /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/.exec(name);
-}
-function fieldnum(names, pat) {
-  return names.findIndex(n => RegExp(pat, 'i').exec(n))
-}
-function first_date_field(names) {
-  return names.findIndex(n => !!parse_date(n));
-}
+//////////////////////////////////////////////////////////////////////
+// By-day summarization.
+// Some days the CSSE data is broken out by-county and other days
+// by-state.  This function sums time series across rows based on
+// function filters for state and country strings; and get_state_data
+// applies a rule for consolidating U.S. state data that is coded
+// as either "County Name, ST' or "State Name".
+//////////////////////////////////////////////////////////////////////
 function rollup_ts(series, state_filter, country_filter) {
   var names = series[0],
     state_i = fieldnum(names, 'state'),
@@ -139,14 +152,7 @@ function rollup_ts(series, state_filter, country_filter) {
   }
   return [ts_names, totals];
 }
-function series_deltas(series) {
-  var deltas = _.fill(Array(series.length), 0);
-  deltas[0] = series[0];
-  for (var i = 1; i < series.length; ++i) {
-    deltas[i] = series[i] - series[i - 1];
-  }
-  return deltas;
-}
+
 function get_state_data(csse, field, chosen_abbrev, chosen_full) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
@@ -157,6 +163,16 @@ function get_state_data(csse, field, chosen_abbrev, chosen_full) {
   deltas = series_deltas(totals);
   return { dates: dates, totals: totals, deltas: deltas }
 }
+
+//////////////////////////////////////////////////////////////////////
+// Start-day shifting.
+// To make different time series comparable, we can start them
+// all on the same day, or count "day 0" as the day when they
+// all pass a fixed threshold.  available_start_rules makes a
+// list of first-of-month days, and a subset of >=10, 100, 1000
+// rules that apply to the extracted series data; and apply_start_rule
+// shifts the extracted data according to a selected rule.
+//////////////////////////////////////////////////////////////////////
 function available_start_rules(extracted) {
   var dates = extracted.labels;
   var data_series = extracted.series;
@@ -195,6 +211,17 @@ function apply_start_rule(start, extracted) {
   return {labels: dates, series: data_series};
 }
 
+//////////////////////////////////////////////////////////////////////
+// Data extraction.
+// Loaded data is summed, selected, filtered, and sorted here.
+// The user can choose a field (deaths/confirmed), a stat
+// (totals/detlas) and a scale (linear/log) (on a log scale,
+// nonpositive numbers are filtered out).  extract_data will
+// return an "extract" object which has a list of (date) labels
+// and a series which is a list of pairs ['ST', [day1, day2,...]]
+// of time series data, by state abbreviation.  Ten states
+// are included, based on the highest numbers on the last day.
+//////////////////////////////////////////////////////////////////////
 function extract_data(csse, field, stat, scale) {
   field = field || 'confirmed';
   stat = stat || 'totals';
@@ -217,6 +244,11 @@ function extract_data(csse, field, stat, scale) {
   };
 }
 
+//////////////////////////////////////////////////////////////////////
+// Plotting.
+// The extract data is plotted using chartist.js,
+// using the given scale.
+//////////////////////////////////////////////////////////////////////
 function plot_series(extract, scale) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
@@ -261,6 +293,12 @@ function plot_series(extract, scale) {
   preparePrintChart(chart);
   return chart;
 }
+
+//////////////////////////////////////////////////////////////////////
+// Selection.
+// The vue.js app is used to manage the user's selection of different
+// options.
+//////////////////////////////////////////////////////////////////////
 var theapp = new Vue({
   el: '#app',
   data: {
@@ -304,6 +342,32 @@ var theapp = new Vue({
     }
   }
 });
+
+//////////////////////////////////////////////////////////////////////
+// Utility functions.
+//////////////////////////////////////////////////////////////////////
+function series_deltas(series) {
+  var deltas = _.fill(Array(series.length), 0);
+  deltas[0] = series[0];
+  for (var i = 1; i < series.length; ++i) {
+    deltas[i] = series[i] - series[i - 1];
+  }
+  return deltas;
+}
+function parse_date(name) {
+  return /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/.exec(name);
+}
+function fieldnum(names, pat) {
+  return names.findIndex(n => RegExp(pat, 'i').exec(n))
+}
+function first_date_field(names) {
+  return names.findIndex(n => !!parse_date(n));
+}
+
+//////////////////////////////////////////////////////////////////////
+// Initialization.
+// Load the csse data, and then tell the vue app to draw the chart.
+//////////////////////////////////////////////////////////////////////
 load_csse_data((d) => {
   csse = d;
   theapp.csse = d;
