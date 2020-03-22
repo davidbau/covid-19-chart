@@ -18,9 +18,11 @@ chartist = Chartist; jquery = $;
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="lib/chart.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.js" integrity="sha256-NSuqgY2hCZJUN6hDMFfdxvkexI7+iLxXQbL540RQ/c4=" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
 <style>
-body { background: #FFF1E3; color: #333; }
-* { font-family: 'Arial', sans-serif; font-size: 10pt; }
+body { background: #FFF1E3; color: #333;
+  font-family: 'Open Sans', sans-serif; font-size: 10pt; }
+h1 { font-size: 14pt; }
 .pane-menu { display: inline-block; width: 24%; }
 .pane-chart { display: inline-block; width: 75%; vertical-align: top; }
 </style>
@@ -163,8 +165,8 @@ function plot_data(field, stat, scale) {
     chartPadding: {
       top: 0,
       bottom: 0,
-      left: 0,
-      right: 0,
+      left: 10,
+      right: 5,
     },
     plugins: [
       Chartist.plugins.legend({
