@@ -178,8 +178,8 @@ function available_start_rules(extracted) {
   var data_series = extracted.series;
   var first_d = dates[0];
   var other_d = dates.slice(1).filter(x => !!/^\d+\/1\/\d+$/.exec(x));
-  var max_v = _.max(data_series.map(x => _.max(x[1])));
-  var gt_rules = [10, 100, 1000].filter(x => (x < max_v)).map(x => '>=' + x);
+  var third_v = _.sortBy(data_series.map(x => _.max(x[1])), x => -x)[2];
+  var gt_rules = [10, 100, 1000].filter(x => (x < third_v)).map(x => '>=' + x);
   return _.concat([first_d], other_d, gt_rules);
 }
 function apply_start_rule(start, extracted) {
@@ -309,7 +309,7 @@ var theapp = new Vue({
     chosen_series: 'confirmed',
     chosen_stat: 'totals',
     chosen_scale: 'log10',
-    chosen_start: '',
+    chosen_start: '>=100',
   },
   computed: {
     start_choices: function() {
