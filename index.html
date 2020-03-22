@@ -151,7 +151,13 @@ function get_state_data(field, chosen_abbrev, chosen_full) {
   deltas = series_deltas(totals);
   return { dates: dates, totals: totals, deltas: deltas }
 }
-function plot_data(field, stat, scale) {
+function apply_start_rule(start, dates, data_series) {
+  if (!start) {
+     return {labels: dates, series: data_series};
+  }
+}
+
+function extract_data(field, stat, start, scale) {
   field = field || 'confirmed';
   stat = stat || 'totals';
   scale = scale || 'log10';
@@ -167,10 +173,16 @@ function plot_data(field, stat, scale) {
   });
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (_.last(y[1]) || 0) - (_.last(x[1]) || 0)).slice(0, 10);
+  return apply_start_rule(
+      start, dates, _.concat([['US', national_series]], top_states));
+}
+
+function plot_series(labels, top_series, scale) {
+  scale = scale || 'log10';
   if (chart) { chart.detach(); }
   chart = new Chartist.Line('#chart', {
-    labels: dates.map(x => x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2')),
-    series: _.concat([national_series], top_states.map(x => x[1])),
+    labels: labels.map(x => x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2')),
+    series: top_series.map(x => x[1]),
   }, {
     lineSmooth: Chartist.Interpolation.none({
       fillHoles: false
@@ -180,7 +192,7 @@ function plot_data(field, stat, scale) {
     },
     axisX: {
       labelInterpolationFnc: function skipLabels(value, index) {
-        return index % 7  === (dates.length - 1) % 7 ? value : null;
+        return index % 7  === (labels.length - 1) % 7 ? value : null;
       },
     },
     axisY: {
@@ -196,7 +208,7 @@ function plot_data(field, stat, scale) {
     },
     plugins: [
       Chartist.plugins.legend({
-        legendNames: _.concat(['US'], top_states.map(x => x[0]))
+        legendNames: top_series.map(x => x[0])
       }),
       Chartist.plugins.tooltip()
     ]
@@ -226,10 +238,16 @@ var theapp = new Vue({
   },
   methods: {
     draw_chart: function() {
-      plot_data(this.chosen_series, this.chosen_stat, this.chosen_scale);
+      var extract = extract_data(
+          this.chosen_series, this.chosen_stat, null, this.chosen_scale);
+      plot_series(extract.labels, extract.series, this.chosen_scale)
     }
   }
 });
-load_csse_data((d) => {csse = d; plot_data()});
+load_csse_data((d) => {
+  csse = d;
+  var extract = extract_data();
+  plot_series(extract.labels, extract.series);
+});
 
 </script>
