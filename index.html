@@ -75,31 +75,20 @@ hover on points for specific numbers.</p>
 </div
 ><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
 ><div class="pane-credit">
-<p>Start at '>=100' to shift the x axis to count days since the
-threshold is passed.  This is the view policymakers should think about;
-it reveals effects of different policies, as done on the international
-<a href="https://www.ft.com/content/a26fbf7e-48f8-11ea-aeb3-955839e06441">FT
-plot by John Burn-Murdoch</a>.
 
-<p>The linear delta plot is the doctors-eye view, and gives a rough
-sense for the number of people walking into ERs and taking up ICU beds
-on a given day.  This gives a sense for the problems seen on the ground.
+<p>For policymakers, the chart lets you look at USA data in the same way the <a href="https://www.ft.com/coronavirus-latest">Financial Times COVID-19 plot by John Murdoch</a> lets you see different policies internationally. Select the logarithmic totals with a '>=100' starting threshold, so that "day zero" is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and therefore the slopes, will reveal the differences.
 
-<p>My physician wife wanted to see some of these summaries of U.S.
-covid-19 stats that are not being graphed in the press, so I wrote
-this short HTML page to create those rollups.
+<p>The other point-of-view is the doctors-eye view. Doctors do not have time to worry about long-term policy, because they need to deal with the patients who walk into the ER and who who lie sick in ICU beds. To see these numbers, switch to the 'delta' 'linear' view in the current month. The huge waves show why the panic is justified, and why minor policy changes translate into massive effects on the ground.
 
-<p>This page is about 200 lines of HTML+JS, using chartist.js
-(with legend, tooltip, and logaxis extensions), vue.js, lodash.js, and
-papaparse.
-It should be easy to generalize to international data or other stats,
-and pull requests are welcome.
+<p>The graph automatically updates every day based on current data. Please share. And please isolate.
+
+<p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press.  It is just one short HTML page (using chartist.js, vue.js, lodash.js), and it should be easy to generalize to international data or other stats.  Pull requests are welcome.
 
 <p>Code is at <a href="https://github.com/davidbau/covid-19-chart"
 >https://github.com/davidbau/covid-19-chart</a>.
 
 <p>Open source. (MIT license.)
-<p>- David Bau
+<p>- <a href="http://davidbau.com/">David Bau</a>
 </div
 ></body>
 <script>
