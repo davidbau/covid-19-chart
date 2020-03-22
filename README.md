@@ -1,13 +1,21 @@
 COVID-19 Time Series Chart
 ==========================
 
-My physician wife wanted to see some summaries of U.S. stats that are
-not graphed in the press, so I wrote this short HTML page to create
-those rollups.
+<a href="https://davidbau.github.io/covid-19-chart">See the chart at
+https://davidbau.github.io/covid-19-chart</a>.
 
-The page pulls data from the Johns Hopkins CSSE feed on github,
-and could be easily modified to examine interntional data or other
-statistics.
+My physician wife wanted to see some summaries of U.S. covid-19
+stats that are not graphed in the press, so I wrote this short HTML
+page to create those rollups.
 
-Uses chartist.js with chartist-legend chartist-logaxis extensions;
-and vue, lodash and papaparse.
+This page is (currently) less than 200 lines of HTML+JS, using chartist.js
+(with legend and logaxis extensions), vue.js, lodash.js, and papaparse.
+It should be easy to generalize to international data or other stats,
+and pull requests are welcome.
+
+Code is at <a href="https://github.com/davidbau/covid-19-chart"
+>https://github.com/davidbau/covid-19-chart</a>.
+
+Open source. (MIT license.)
+
+David Bau
