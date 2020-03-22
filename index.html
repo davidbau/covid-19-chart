@@ -10,7 +10,7 @@ Simple COVID-19 charting code, single-page HTML javascript.
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.js" integrity="sha256-Nyn8cCQAr3TDltwQENC7vbHQaLKy9xuq8xon2BNZgPk=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.min.css" integrity="sha256-seGyqLj5T52Hx8W7/YTajtNXGXQf+IksfkcaKGoTkbY=" crossorigin="anonymous" />
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.js" integrity="sha256-NSuqgY2hCZJUN6hDMFfdxvkexI7+iLxXQbL540RQ/c4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js" integrity="sha256-ngFW3UnAN0Tnm76mDuu7uUtYEcG3G5H1+zioJw3t+68=" crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
 <script>// Tooltip plugin needs these lowercased globals, oddly enough.
 chartist = Chartist; jquery = $;
@@ -161,7 +161,7 @@ function plot_data(field, stat, scale) {
   });
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (_.last(y[1]) || 0) - (_.last(x[1]) || 0)).slice(0, 10);
-  if (chart) { chart.detach(); console.log('detached chart'); }
+  if (chart) { chart.detach(); }
   chart = new Chartist.Line('#chart', {
     labels: dates.map(x => x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2')),
     series: _.concat([national_series], top_states.map(x => x[1]))
