@@ -26,9 +26,15 @@ chartist = Chartist; jquery = $;
 body { background: #FFF1E3; color: #333;
   font-family: 'Open Sans', sans-serif; font-size: 10pt; }
 h1 { font-size: 14pt; }
+@media only screen and (max-width:799px) {
+  .ct-line { stroke-width: 2px; }
+  .ct-point { stroke-width: 5px; }
+}
 @media only screen and (min-width:800px) {
   .pane-menu { display: inline-block; width: 26%; }
   .pane-chart { display: inline-block; width: 73%; float: right; }
+  .ct-line { stroke-width: 3px; }
+  .ct-point { stroke-width: 8px; }
 }
 @media only print {
   .pane-chart { width: 100% }
@@ -164,10 +170,15 @@ function plot_data(field, stat, scale) {
   if (chart) { chart.detach(); }
   chart = new Chartist.Line('#chart', {
     labels: dates.map(x => x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2')),
-    series: _.concat([national_series], top_states.map(x => x[1]))
+    series: _.concat([national_series], top_states.map(x => x[1])),
   }, {
     classNames: {
       gridMinor: 'ct-grid-minor'
+    },
+    axisX: {
+      labelInterpolationFnc: function skipLabels(value, index) {
+        return index % 7  === (dates.length - 1) % 7 ? value : null;
+      },
     },
     axisY: {
       showMinorGrid: true,
