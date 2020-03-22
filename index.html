@@ -4,6 +4,7 @@ Simple COVID-19 charting code, single-page HTML javascript.
 <!doctype html>
 <html>
 <head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.js" integrity="sha256-iAuxnf8Cwr0yrQkpf6oQG4PaL/oVmoer6V/RfX2KQws=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.js" integrity="sha256-Nyn8cCQAr3TDltwQENC7vbHQaLKy9xuq8xon2BNZgPk=" crossorigin="anonymous"></script>
@@ -11,6 +12,11 @@ Simple COVID-19 charting code, single-page HTML javascript.
 <script src="lib/chartist-logaxis.js"></script>
 <script src="lib/usa_states.js"></script>
 <script src="https://codeyellowbv.github.io/chartist-plugin-legend/chartist-plugin-legend.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartist-plugin-legend@0.6.2/chartist-plugin-legend.js" integrity="sha256-rm+ZFJf1d1bqR3jvapLCMwLQaSBE87bp/Kh5Wc08fXY=" crossorigin="anonymous"></script>
+<script>// Tooltip plugin needs these lowercased globals, oddly enough.
+chartist = Chartist; jquery = $;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="lib/chart.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.js" integrity="sha256-NSuqgY2hCZJUN6hDMFfdxvkexI7+iLxXQbL540RQ/c4=" crossorigin="anonymous"></script>
 <style>
@@ -160,7 +166,8 @@ function plot_data(field, stat, scale) {
     plugins: [
       Chartist.plugins.legend({
         legendNames: _.concat(['US'], top_states.map(x => x[0]))
-      })
+      }),
+      Chartist.plugins.tooltip()
     ]
   });
   return chart;
