@@ -64,14 +64,30 @@ data are pulled directly from
     {{ option }}
   </option>
 </select>
+&nbsp; start:
+<select v-model="chosen_start" class="select-css">
+  <option v-for="option in start_choices" v-bind:value="option">
+    {{ option }}
+  </option>
+</select>
 <p>Click on the legend to toggle a series;
 hover on points for specific numbers.</p>
 </div
 ><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
 ><div class="pane-credit">
-<p>My physician wife wanted to see some summaries of U.S. covid-19
-stats that are not graphed in the press, so I wrote this short HTML
-page to create those rollups.
+<p>Start at '>=100' to shift the x axis to count days since the
+threshold is passed.  This is the view policymakers should think about;
+it reveals effects of different policies, as done on the international
+<a href="https://www.ft.com/content/a26fbf7e-48f8-11ea-aeb3-955839e06441">FT
+plot by John Burn-Murdoch</a>.
+
+<p>The linear delta plot is the doctors-eye view, and gives a rough
+sense for the number of people walking into ERs and taking up ICU beds
+on a given day.  This gives a sense for the problems seen on the ground.
+
+<p>My physician wife wanted to see some of these summaries of U.S.
+covid-19 stats that are not being graphed in the press, so I wrote
+this short HTML page to create those rollups.
 
 <p>This page is about 200 lines of HTML+JS, using chartist.js
 (with legend, tooltip, and logaxis extensions), vue.js, lodash.js, and
@@ -141,7 +157,7 @@ function series_deltas(series) {
   }
   return deltas;
 }
-function get_state_data(field, chosen_abbrev, chosen_full) {
+function get_state_data(csse, field, chosen_abbrev, chosen_full) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
     state => { return !chosen_abbrev ||
@@ -151,38 +167,76 @@ function get_state_data(field, chosen_abbrev, chosen_full) {
   deltas = series_deltas(totals);
   return { dates: dates, totals: totals, deltas: deltas }
 }
-function apply_start_rule(start, dates, data_series) {
-  if (!start) {
-     return {labels: dates, series: data_series};
+function available_start_rules(extracted) {
+  var dates = extracted.labels;
+  var data_series = extracted.series;
+  var first_d = dates[0];
+  var other_d = dates.slice(1).filter(x => !!/^\d+\/1\/\d+$/.exec(x));
+  var max_v = _.max(data_series.map(x => _.max(x[1])));
+  var gt_rules = [10, 100, 1000].filter(x => (x < max_v)).map(x => '>=' + x);
+  return _.concat([first_d], other_d, gt_rules);
+}
+function apply_start_rule(start, extracted) {
+  var dates = extracted.labels;
+  var data_series = extracted.series;
+  if (start.startsWith('>=')) {
+    var min_v = parseInt(start.slice(2));
+    function shift_series(s, min) {
+      var first_i = _.findIndex(s, x => x !== null && x >= min);
+      if (first_i >= 0) {
+        return s.slice(first_i);
+      } else {
+        return null;
+      }
+    }
+    data_series = data_series.map(x => [x[0], shift_series(x[1], min_v)]);
+    data_series = data_series.filter(x => !!x[1]);
+    dates = _.range(0, _.max(data_series.map(x => x[1].length)));
+    return {labels: dates, series: data_series};
   }
+  if (parse_date(start)) {
+    var first_i = dates.indexOf(start);
+    if (first_i >= 0) {
+      dates = dates.slice(first_i);
+      data_series = data_series.map(x => [x[0], x[1].slice(first_i)]);
+    }
+    return {labels: dates, series: data_series};
+  }
+  return {labels: dates, series: data_series};
 }
 
-function extract_data(field, stat, start, scale) {
+function extract_data(csse, field, stat, scale) {
   field = field || 'confirmed';
   stat = stat || 'totals';
   scale = scale || 'log10';
-  var national_data = get_state_data(field, null);
+  var national_data = get_state_data(csse, field, null);
   var first_nz = _.findIndex(national_data.totals, i => i > 0);
   var national_series = national_data[stat].slice(first_nz);
   var dates = national_data.dates.slice(first_nz);
   var state_series = _.transform(USA_STATES, (r, v, k) => {
-    r[k] = get_state_data(field, k, v)[stat].slice(first_nz);
+    r[k] = get_state_data(csse, field, k, v)[stat].slice(first_nz);
     if (/log/.exec(scale)) {
       r[k] = r[k].map(x => x > 0 ? x : null)
     }
   });
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (_.last(y[1]) || 0) - (_.last(x[1]) || 0)).slice(0, 10);
-  return apply_start_rule(
-      start, dates, _.concat([['US', national_series]], top_states));
+  return {
+    labels: dates,
+    series: _.concat([['US', national_series]], top_states)
+  };
 }
 
-function plot_series(labels, top_series, scale) {
+function plot_series(extract, scale) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
   chart = new Chartist.Line('#chart', {
-    labels: labels.map(x => x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2')),
-    series: top_series.map(x => x[1]),
+    labels: extract.labels.map(x => {
+      if (!x) return x;
+      x = '' + x;
+      return x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2');
+    }),
+    series: extract.series.map(x => x[1]),
   }, {
     lineSmooth: Chartist.Interpolation.none({
       fillHoles: false
@@ -192,7 +246,8 @@ function plot_series(labels, top_series, scale) {
     },
     axisX: {
       labelInterpolationFnc: function skipLabels(value, index) {
-        return index % 7  === (labels.length - 1) % 7 ? value : null;
+        return index % 7  === (parse_date(extract.labels[0]) ?
+            (extract.labels.length - 1) % 7 : 0) ? value : null;
       },
     },
     axisY: {
@@ -208,7 +263,7 @@ function plot_series(labels, top_series, scale) {
     },
     plugins: [
       Chartist.plugins.legend({
-        legendNames: top_series.map(x => x[0])
+        legendNames: extract.series.map(x => x[0])
       }),
       Chartist.plugins.tooltip()
     ]
@@ -219,12 +274,22 @@ function plot_series(labels, top_series, scale) {
 var theapp = new Vue({
   el: '#app',
   data: {
+    csse: null,
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
     chosen_series: 'confirmed',
     chosen_stat: 'totals',
-    chosen_scale: 'log10'
+    chosen_scale: 'log10',
+    chosen_start: '',
+  },
+  computed: {
+    start_choices: function() {
+      if (this.csse == null) { return ['']; }
+      var extract = extract_data(
+          this.csse, this.chosen_series, this.chosen_stat, this.chosen_scale);
+      return available_start_rules(extract);
+    }
   },
   watch: {
     chosen_series: function(val) { this.draw_chart(); },
@@ -234,20 +299,25 @@ var theapp = new Vue({
       }
       this.draw_chart();
     },
-    chosen_scale: function(val) { this.draw_chart(); }
+    chosen_scale: function(val) { this.draw_chart(); },
+    chosen_start: function(val) { this.draw_chart(); },
   },
   methods: {
     draw_chart: function() {
+      if (this.start_choices.indexOf(this.chosen_start) < 0) {
+        this.chosen_start = this.start_choices[0];
+      }
       var extract = extract_data(
-          this.chosen_series, this.chosen_stat, null, this.chosen_scale);
-      plot_series(extract.labels, extract.series, this.chosen_scale)
+          this.csse, this.chosen_series, this.chosen_stat, this.chosen_scale);
+      var shifted_extract = apply_start_rule(this.chosen_start, extract);
+      plot_series(shifted_extract, this.chosen_scale);
     }
   }
 });
 load_csse_data((d) => {
   csse = d;
-  var extract = extract_data();
-  plot_series(extract.labels, extract.series);
+  theapp.csse = d;
+  theapp.draw_chart();
 });
 
 </script>
