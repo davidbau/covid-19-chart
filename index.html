@@ -64,12 +64,13 @@ data are pulled directly from
     {{ option }}
   </option>
 </select>
-&nbsp; start:
+&nbsp;
+<nobr>start:
 <select v-model="chosen_start" class="select-css">
   <option v-for="option in start_choices" v-bind:value="option">
     {{ option }}
   </option>
-</select>
+</select></nobr>
 <p>Click on the legend to toggle a series;
 hover on points for specific numbers.</p>
 </div
