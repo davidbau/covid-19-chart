@@ -1,6 +1,10 @@
 COVID-19 Time Series Chart
 ==========================
 
+Data are pulled directly from Johns Hopkins CSSE into an interactive chart
+with both log and linear options, breakouts by state, and graphs of
+changes from day to day of reported deaths and confirmed cases.
+
 <a href="https://davidbau.github.io/covid-19-chart">See the chart at
 https://davidbau.github.io/covid-19-chart</a>.
 
