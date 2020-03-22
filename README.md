@@ -13,8 +13,8 @@ This page is (currently) less than 200 lines of HTML+JS, using chartist.js
 It should be easy to generalize to international data or other stats,
 and pull requests are welcome.
 
-Code is at <a href="https://github.com/davidbau/covid-19-chart"
->https://github.com/davidbau/covid-19-chart</a>.
+Code is at <a href="https://github.com/davidbau/covid-19-chart">
+https://github.com/davidbau/covid-19-chart</a>.
 
 Open source. (MIT license.)
 
