@@ -8,9 +8,11 @@ My physician wife wanted to see some summaries of U.S. covid-19
 stats that are not graphed in the press, so I wrote this short HTML
 page to create those rollups.
 
-This page is (currently) less than 200 lines of HTML+JS, using chartist.js
-(with legend and logaxis extensions), vue.js, lodash.js, and papaparse.
-It should be easy to generalize to international data or other stats,
+This page is about 200 lines of HTML+JS, using chartist.js
+(with legend, tooltip, and logaxis extensions), vue.js, lodash.js,
+and papaparse.
+It should be easy to generalize to use to visualize the
+international data from the feed, or other stats,
 and pull requests are welcome.
 
 Code is at <a href="https://github.com/davidbau/covid-19-chart">
