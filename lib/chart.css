@@ -3,6 +3,7 @@
 }
 .ct-grid-minor {
   stroke-dasharray: 2px;
+  stroke-width: 0.5px;
 }
 .ct-chart {
    position: relative;
