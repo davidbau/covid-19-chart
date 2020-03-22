@@ -172,6 +172,9 @@ function plot_data(field, stat, scale) {
     labels: dates.map(x => x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2')),
     series: _.concat([national_series], top_states.map(x => x[1])),
   }, {
+    lineSmooth: Chartist.Interpolation.none({
+      fillHoles: false
+    }),
     classNames: {
       gridMinor: 'ct-grid-minor'
     },
