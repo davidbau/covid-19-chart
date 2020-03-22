@@ -4,27 +4,36 @@ Simple COVID-19 charting code, single-page HTML javascript.
 <!doctype html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.js" integrity="sha256-iAuxnf8Cwr0yrQkpf6oQG4PaL/oVmoer6V/RfX2KQws=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.js" integrity="sha256-Nyn8cCQAr3TDltwQENC7vbHQaLKy9xuq8xon2BNZgPk=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.min.css" integrity="sha256-seGyqLj5T52Hx8W7/YTajtNXGXQf+IksfkcaKGoTkbY=" crossorigin="anonymous" />
-<script src="lib/chartist-logaxis.js"></script>
-<script src="lib/usa_states.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartist-plugin-legend@0.6.2/chartist-plugin-legend.js" integrity="sha256-rm+ZFJf1d1bqR3jvapLCMwLQaSBE87bp/Kh5Wc08fXY=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.js" integrity="sha256-NSuqgY2hCZJUN6hDMFfdxvkexI7+iLxXQbL540RQ/c4=" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
 <script>// Tooltip plugin needs these lowercased globals, oddly enough.
 chartist = Chartist; jquery = $;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
+<script src="lib/chartist-plugin-legend.js"></script>
+<script src="lib/chartist-logaxis.js"></script>
+<script src="lib/chartist-print.js"></script>
+<script src="lib/usa_states.js"></script>
+<link rel="stylesheet" href="lib/select.css">
 <link rel="stylesheet" href="lib/chart.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.js" integrity="sha256-NSuqgY2hCZJUN6hDMFfdxvkexI7+iLxXQbL540RQ/c4=" crossorigin="anonymous"></script>
-<link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
 <style>
 body { background: #FFF1E3; color: #333;
   font-family: 'Open Sans', sans-serif; font-size: 10pt; }
 h1 { font-size: 14pt; }
-.pane-menu { display: inline-block; width: 24%; }
-.pane-chart { display: inline-block; width: 75%; vertical-align: top; }
+@media only screen and (min-width:800px) {
+  .pane-menu { display: inline-block; width: 26%; }
+  .pane-chart { display: inline-block; width: 73%; float: right; }
+}
+@media only print {
+  .pane-chart { width: 100% }
+  body { background: none; }
+}
 </style>
 </head>
 <body>
@@ -34,23 +43,26 @@ h1 { font-size: 14pt; }
 data are pulled directly from
 <a href="https://github.com/CSSEGISandData/COVID-19/" >Johns Hopkins CSSE</a>.
 <p>
-<select v-model="chosen_series">
+<select v-model="chosen_series" class="select-css">
   <option v-for="option in series_choices" v-bind:value="option">
     {{ option }}
   </option>
 </select>
-<select v-model="chosen_stat">
+<select v-model="chosen_stat" class="select-css">
   <option v-for="option in stat_choices" v-bind:value="option">
     {{ option }}
   </option>
 </select>
-<select v-model="chosen_scale">
+<select v-model="chosen_scale" class="select-css">
   <option v-for="option in chosen_stat == 'deltas' ? ['linear'] : scale_choices" v-bind:value="option">
     {{ option }}
   </option>
 </select>
 <p>Click on the legend to toggle a series;
 hover on points for specific numbers.</p>
+</div
+><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
+><div class="pane-credit">
 <p>My physician wife wanted to see some summaries of U.S. covid-19
 stats that are not graphed in the press, so I wrote this short HTML
 page to create those rollups.
@@ -67,9 +79,9 @@ and pull requests are welcome.
 <p>Open source. (MIT license.)
 <p>- David Bau
 </div
-><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div>
-</body>
+></body>
 <script>
+var csse = null, chart = null;
 function csv_url(seriesname) {
   var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
     "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
@@ -123,7 +135,6 @@ function series_deltas(series) {
   }
   return deltas;
 }
-var csse;
 function get_state_data(field, chosen_abbrev, chosen_full) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
@@ -150,7 +161,8 @@ function plot_data(field, stat, scale) {
   });
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (_.last(y[1]) || 0) - (_.last(x[1]) || 0)).slice(0, 10);
-  var chart = new Chartist.Line('#chart', {
+  if (chart) { chart.detach(); console.log('detached chart'); }
+  chart = new Chartist.Line('#chart', {
     labels: dates.map(x => x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2')),
     series: _.concat([national_series], top_states.map(x => x[1]))
   }, {
@@ -163,10 +175,10 @@ function plot_data(field, stat, scale) {
       scale: scale,
     },
     chartPadding: {
-      top: 0,
-      bottom: 0,
-      left: 10,
-      right: 5,
+      top: 50,
+      bottom: 10,
+      left: 20,
+      right: 10,
     },
     plugins: [
       Chartist.plugins.legend({
@@ -175,6 +187,7 @@ function plot_data(field, stat, scale) {
       Chartist.plugins.tooltip()
     ]
   });
+  preparePrintChart(chart);
   return chart;
 }
 var theapp = new Vue({
@@ -204,4 +217,5 @@ var theapp = new Vue({
   }
 });
 load_csse_data((d) => {csse = d; plot_data()});
+
 </script>
