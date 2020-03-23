@@ -4,6 +4,7 @@ Simple COVID-19 charting code, single-page HTML javascript.
 <!doctype html>
 <html>
 <head>
+<meta name="description" content="Interactive chart of coronavirus cases over time.">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!--
    Library dependencies, loaded from various CDNs.
@@ -126,6 +127,7 @@ function load_csse_data(loaded) {
     })
   })
 }
+
 //////////////////////////////////////////////////////////////////////
 // By-day summarization.
 // Some days the CSSE data is broken out by-county and other days
@@ -178,17 +180,18 @@ function available_start_rules(extracted) {
   var data_series = extracted.series;
   var first_d = dates[0];
   var other_d = dates.slice(1).filter(x => !!/^\d+\/1\/\d+$/.exec(x));
-  var third_v = _.sortBy(data_series.map(x => _.max(x[1])), x => -x)[2];
+  var third_v = _.sortBy(data_series.map(
+      x => _.max(x[1].map(x => x.value)), x => -x))[2];
   var gt_rules = [10, 100, 1000].filter(x => (x < third_v)).map(x => '>=' + x);
   return _.concat([first_d], other_d, gt_rules);
 }
 function apply_start_rule(start, extracted) {
-  var dates = extracted.labels;
+  var labels = extracted.labels;
   var data_series = extracted.series;
   if (start.startsWith('>=')) {
     var min_v = parseInt(start.slice(2));
     function shift_series(s, min) {
-      var first_i = _.findIndex(s, x => x !== null && x >= min);
+      var first_i = _.findIndex(s, x => x !== null && x.value >= min);
       if (first_i >= 0) {
         return s.slice(first_i);
       } else {
@@ -197,18 +200,18 @@ function apply_start_rule(start, extracted) {
     }
     data_series = data_series.map(x => [x[0], shift_series(x[1], min_v)]);
     data_series = data_series.filter(x => !!x[1]);
-    dates = _.range(0, _.max(data_series.map(x => x[1].length)));
-    return {labels: dates, series: data_series};
+    labels = _.range(0, _.max(data_series.map(x => x[1].length)));
+    return {labels: labels, series: data_series};
   }
   if (parse_date(start)) {
-    var first_i = dates.indexOf(start);
+    var first_i = labels.indexOf(start);
     if (first_i >= 0) {
-      dates = dates.slice(first_i);
+      labels = labels.slice(first_i);
       data_series = data_series.map(x => [x[0], x[1].slice(first_i)]);
     }
-    return {labels: dates, series: data_series};
+    return {labels: labels, series: data_series};
   }
-  return {labels: dates, series: data_series};
+  return {labels: labels, series: data_series};
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -242,9 +245,12 @@ function extract_data(csse, field, stat, scale) {
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (avg_last3(y[1]) || 0) - (avg_last3(x[1]) || 0)
            ).slice(0, 10);
+  var series = _.concat([['US', national_series]], top_states);
+  var desc_series = series.map(p => [p[0], p[1].map((x, i) =>
+     { return { meta: p[0] + ' ' + dates[i], value: x }; })]);
   return {
     labels: dates,
-    series: _.concat([['US', national_series]], top_states)
+    series: desc_series
   };
 }
 

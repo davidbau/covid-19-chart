@@ -94,8 +94,8 @@
 .ct-tooltip {
   position: absolute;
   display: inline-block;
-  min-width: 3em;
-  padding: 8px 10px;
+  min-width: 5.5em;
+  padding: 3px 8px;
   background: #383838;
   color: #fff;
   text-align: center;
