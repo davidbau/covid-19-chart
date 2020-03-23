@@ -15,6 +15,7 @@ Simple COVID-19 charting code, single-page HTML javascript.
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.js" integrity="sha256-Nyn8cCQAr3TDltwQENC7vbHQaLKy9xuq8xon2BNZgPk=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.min.css" integrity="sha256-seGyqLj5T52Hx8W7/YTajtNXGXQf+IksfkcaKGoTkbY=" crossorigin="anonymous" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js" integrity="sha256-ngFW3UnAN0Tnm76mDuu7uUtYEcG3G5H1+zioJw3t+68=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.1.3/vue-router.min.js" integrity="sha256-r/vPIUvTobCpYZsMmvU7HM58cNd4D6/vdICqDFapV7Y=" crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
 <script>// Tooltip plugin needs these lowercased globals, oddly enough.
 chartist = Chartist; jquery = $;
@@ -311,15 +312,12 @@ function plot_series(extract, scale) {
 //////////////////////////////////////////////////////////////////////
 var theapp = new Vue({
   el: '#app',
+  router: new VueRouter(),
   data: {
     csse: null,
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
-    chosen_series: 'confirmed',
-    chosen_stat: 'totals',
-    chosen_scale: 'log10',
-    chosen_start: '>=100',
   },
   computed: {
     start_choices: function() {
@@ -327,7 +325,11 @@ var theapp = new Vue({
       var extract = extract_data(
           this.csse, this.chosen_series, this.chosen_stat, this.chosen_scale);
       return available_start_rules(extract);
-    }
+    },
+    chosen_series: url_property('series', 'confirmed'),
+    chosen_stat: url_property('stat', 'totals'),
+    chosen_scale: url_property('scale', 'log10'),
+    chosen_start: url_property('start', '>=100'),
   },
   watch: {
     chosen_series: function(val) { this.draw_chart(); },
@@ -372,6 +374,13 @@ function fieldnum(names, pat) {
 }
 function first_date_field(names) {
   return names.findIndex(n => !!parse_date(n));
+}
+function url_property(name, default_value) {
+  return {
+    get() { return this.$route.query[name] || default_value },
+    set(value) { this.$router.replace({query: _.defaults(
+      { [name]: value }, this.$route.query) }).catch(err => {}); }
+  };
 }
 
 //////////////////////////////////////////////////////////////////////
