@@ -2,7 +2,7 @@ COVID-19 Time Series Chart
 ==========================
 
 Data are pulled directly from
-<a href="https://github.com/CSSEGISandData/COVID-19>Johns Hopkins CSSE</a>
+<a href="https://github.com/CSSEGISandData/COVID-19">Johns Hopkins CSSE</a>
 into an interactive chart with both log and linear options,
 breakouts by state, and graphs of changes from day to day of
 reported deaths and confirmed cases.
