@@ -236,8 +236,12 @@ function extract_data(csse, field, stat, scale) {
       r[k] = r[k].map(x => x > 0 ? x : null)
     }
   });
+  function avg_last3(s) {
+    return _.sum(s.slice(-3)) / (1e-10 + s.slice(-3).length);
+  }
   var top_states = _.toPairs(state_series)
-      .sort((x, y) => (_.last(y[1]) || 0) - (_.last(x[1]) || 0)).slice(0, 10);
+      .sort((x, y) => (avg_last3(y[1]) || 0) - (avg_last3(x[1]) || 0)
+           ).slice(0, 10);
   return {
     labels: dates,
     series: _.concat([['US', national_series]], top_states)
