@@ -183,7 +183,7 @@ function available_start_rules(extracted) {
   var first_d = dates[0];
   var other_d = dates.slice(1).filter(x => !!/^\d+\/1\/\d+$/.exec(x));
   var third_v = _.sortBy(data_series.map(
-      x => _.max(x[1].map(x => x.value)), x => -x))[2];
+      x => _.max(x[1].map(x => x.value))), x => -x)[2];
   var gt_rules = [10, 100, 1000].filter(x => (x < third_v)).map(x => '>=' + x);
   return _.concat([first_d], other_d, gt_rules);
 }
