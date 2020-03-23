@@ -92,6 +92,8 @@
    border-color: #eacf7d;
 }
 .ct-tooltip {
+  margin-top: 20px;
+  margin-left: 2px;
   position: absolute;
   display: inline-block;
   min-width: 5.5em;
