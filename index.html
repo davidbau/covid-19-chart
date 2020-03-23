@@ -357,7 +357,7 @@ var theapp = new Vue({
   },
   computed: {
     start_choices: function() {
-      if (this.csse == null) { return ['']; }
+      if (this.csse == null) { return ['1/1/20', '>=100', '>=1000']; }
       var extract = extract_data(this.csse, this.chosen_domain,
           this.chosen_series, this.chosen_stat, this.chosen_scale);
       return available_start_rules(extract);
