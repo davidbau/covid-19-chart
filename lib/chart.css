@@ -91,6 +91,22 @@
    background-color: #eacf7d;
    border-color: #eacf7d;
 }
+.ct-legend .ct-series-11:before {
+   background-color: #86797d;
+   border-color: #86797d;
+}
+.ct-legend .ct-series-12:before {
+   background-color: #b2c326;
+   border-color: #b2c326;
+}
+.ct-legend .ct-series-13:before {
+   background-color: #6188e2;
+   border-color: #6188e2;
+}
+.ct-legend .ct-series-14:before {
+   background-color: #a748ca;
+   border-color: #a748ca;
+}
 .ct-tooltip {
   margin-top: 20px;
   margin-left: 2px;

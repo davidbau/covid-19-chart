@@ -53,7 +53,8 @@ select { margin-top: 1px; margin-bottom: 1px; }
 <!--
   User interface, using vue template idioms.
 -->
-<div id="app" class="pane-menu">
+<div id="app">
+<div class="pane-menu" :style="{display: chosen_bare ? 'none' : 'block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
 COVID-19 Time Series</h1>
 <p>Stats on 10 {{ { US: 'states',
@@ -90,7 +91,7 @@ COVID-19 Time Series</h1>
 hover on points for specific numbers.</p>
 </div
 ><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
-><div class="pane-credit">
+><div class="pane-credit" :style="{display: chosen_bare ? 'none' : 'block'}">
 
 <p>For policymakers, the chart can <a href="#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed">compare exponental growth of coronavirus cases</a>.
 Select the logarithmic totals with a &gt;=100 starting threshold, so that day zero is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and therefore the slopes, will reveal the differences.
@@ -99,13 +100,13 @@ Select the logarithmic totals with a &gt;=100 starting threshold, so that day ze
 
 <p>The graph automatically updates every day based on current data. Please share. And please isolate.
 
-<p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>, which reveals policy differences internationally.  This is just one short HTML page (using chartist.js, vue.js, lodash.js), and it should be easy to add features.  Pull requests are welcome.
+<p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>, which reveals policy differences internationally.  It is an easy-to-modify HTML page (using chartist.js, vue.js, lodash.js); pull requests are welcome.
 
 <p>Code is at <a href="https://github.com/davidbau/covid-19-chart"
 >https://github.com/davidbau/covid-19-chart</a>.
 Open source. (MIT license.)
 <address>- <a href="http://davidbau.com/">David Bau</a></address>
-</div></body>
+</div></div></body>
 <script>
 // Globals:
 var csse = null, chart = null;
@@ -253,11 +254,13 @@ function apply_start_rule(start, extracted) {
 // of time series data, by state abbreviation.  Ten states
 // are included, based on the highest numbers on the last day.
 //////////////////////////////////////////////////////////////////////
-function extract_data(csse, domain, field, stat, scale) {
+function extract_data(csse, domain, field, stat, scale, topcount, include) {
+  if (!csse) return { labels: [], dates: [] };
   domain = domain || 'US';
   field = field || 'confirmed';
   stat = stat || 'totals';
   scale = scale || 'log10';
+  topcount = topcount || 10;
   var get_local_data = domain == 'Intl' ?
       get_national_data : get_state_data;
   var global_data = get_local_data(csse, field, null);
@@ -279,7 +282,13 @@ function extract_data(csse, domain, field, stat, scale) {
   }
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (avg_last3(y[1]) || 0) - (avg_last3(x[1]) || 0)
-           ).slice(0, 10);
+           ).slice(0, parseInt(topcount));
+  var included = _.fromPairs(top_states);
+  for (var inc of include.split(';')) {
+    if (!(inc in included) && inc in state_series) {
+      top_states.push([inc, state_series[inc]]);
+    }
+  }
   var series = domain == 'Intl' ? top_states :
        _.concat([[domain, global_series]], top_states);
   var desc_series = series.map(p => [p[0], p[1].map((x, i) =>
@@ -358,35 +367,38 @@ var theapp = new Vue({
   computed: {
     start_choices: function() {
       if (this.csse == null) { return ['1/1/20', '>=100', '>=1000']; }
-      var extract = extract_data(this.csse, this.chosen_domain,
-          this.chosen_series, this.chosen_stat, this.chosen_scale);
-      return available_start_rules(extract);
+      return available_start_rules(this.extracted_data);
+    },
+    extracted_data: function() {
+      return extract_data(this.csse, this.chosen_domain,
+          this.chosen_series, this.chosen_stat, this.chosen_scale,
+          this.chosen_topcount, this.chosen_include);
     },
     chosen_domain: url_property('domain', 'US'),
     chosen_series: url_property('series', 'confirmed'),
     chosen_stat: url_property('stat', 'totals'),
     chosen_scale: url_property('scale', 'log10'),
     chosen_start: url_property('start', '>=100'),
+    chosen_topcount: url_property('topcount', '10'),
+    chosen_include: url_property('include', ''),
+    chosen_bare: url_property('bare', ''),
   },
   watch: {
-    chosen_domain: function(val) { this.draw_chart(); },
-    chosen_series: function(val) { this.draw_chart(); },
+    extracted_data: function(val) { this.draw_chart(); },
+    chosen_start: function(val) { this.draw_chart(); },
     chosen_stat: function(val) {
       if (val == 'deltas' && this.chosen_scale == 'log10') {
         this.chosen_scale = 'linear';
       }
       this.draw_chart();
     },
-    chosen_scale: function(val) { this.draw_chart(); },
-    chosen_start: function(val) { this.draw_chart(); },
   },
   methods: {
     draw_chart: function() {
       if (this.start_choices.indexOf(this.chosen_start) < 0) {
         this.chosen_start = this.start_choices[0];
       }
-      var extract = extract_data(this.csse,  this.chosen_domain,
-          this.chosen_series, this.chosen_stat, this.chosen_scale);
+      var extract = this.extracted_data;
       var shifted_extract = apply_start_rule(this.chosen_start, extract);
       plot_series(shifted_extract, this.chosen_scale);
     }
