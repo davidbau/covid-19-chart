@@ -147,7 +147,7 @@ function rollup_ts(series, state_filter, country_filter) {
       continue;
     }
     for (var i = ts_i; i < names.length; ++i) {
-      totals[i - ts_i] += parseInt(row[i]);
+      totals[i - ts_i] += (row[i] == '' ? 0 : parseInt(row[i]));
     }
   }
   return [ts_names, totals];
