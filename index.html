@@ -54,7 +54,8 @@ select { margin-top: 1px; margin-bottom: 1px; }
   User interface, using vue template idioms.
 -->
 <div id="app">
-<div class="pane-menu" :style="{display: chosen_bare ? 'none' : 'block'}">
+<div class="pane-menu"
+ :style="{display: chosen_bare ? 'none' : 'inline-block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
 COVID-19 Time Series</h1>
 <p>Stats on 10 {{ { US: 'states',
@@ -102,7 +103,8 @@ Select the logarithmic totals with a &gt;=100 starting threshold, so that day ze
 
 <p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>, which reveals policy differences internationally.  It is an easy-to-modify HTML page (using chartist.js, vue.js, lodash.js); pull requests are welcome.
 
-<p>Code is at <a href="https://github.com/davidbau/covid-19-chart"
+<p>Code and API for more options at
+<a href="https://github.com/davidbau/covid-19-chart"
 >https://github.com/davidbau/covid-19-chart</a>.
 Open source. (MIT license.)
 <address>- <a href="http://davidbau.com/">David Bau</a></address>
