@@ -56,8 +56,9 @@ select { margin-top: 1px; margin-bottom: 1px; }
 <div id="app" class="pane-menu">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
 COVID-19 Time Series</h1>
-<p>Stats on 10 {{ { US: 'states', Intl: 'countries'}[chosen_domain] }}
- with highest numbers are shown; data are pulled directly from
+<p>Stats on 10 {{ { US: 'states',
+  Intl: 'countries outside China'}[chosen_domain] }}
+ with highest numbers; data are from
 <a href="https://github.com/CSSEGISandData/COVID-19/" >Johns Hopkins CSSE</a>.
 <p class="buttonrow">
 <select v-model="chosen_domain" class="select-css">
@@ -91,7 +92,7 @@ hover on points for specific numbers.</p>
 ><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
 ><div class="pane-credit">
 
-<p>For policymakers, the chart can <a href="#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed">compare exponental growth of USA coronavirus cases</a>
+<p>For policymakers, the chart can <a href="#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed">compare exponental growth of coronavirus cases</a>
 Select the ogarithmic totals with a '>=100' starting threshold, so that "day zero" is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and therefore the slopes, will reveal the differences.
 
 <p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a href="#/?scale=linear&stat=deltas&start=2%2F29%2F20&series=deaths">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
