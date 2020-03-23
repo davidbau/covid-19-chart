@@ -31,6 +31,8 @@ chartist = Chartist; jquery = $;
 body { background: #FFF1E3; color: #333;
   font-family: 'Open Sans', sans-serif; font-size: 10pt; }
 h1 { font-size: 14pt; }
+.buttonrow { text-align: center; }
+select { margin-top: 1px; margin-bottom: 1px; }
 @media only screen and (max-width:799px) {
   .ct-line { stroke-width: 2px; }
   .ct-point { stroke-width: 5px; }
@@ -52,11 +54,17 @@ h1 { font-size: 14pt; }
   User interface, using vue template idioms.
 -->
 <div id="app" class="pane-menu">
-<h1>USA COVID-19 Time Series</h1>
-<p>Whole-country stats an top 10 states are shown;
-data are pulled directly from
+<h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
+COVID-19 Time Series</h1>
+<p>Stats on 10 {{ { US: 'states', Intl: 'countries'}[chosen_domain] }}
+ with highest numbers are shown; data are pulled directly from
 <a href="https://github.com/CSSEGISandData/COVID-19/" >Johns Hopkins CSSE</a>.
-<p>
+<p class="buttonrow">
+<select v-model="chosen_domain" class="select-css">
+  <option v-for="option in domain_choices" v-bind:value="option">
+    {{ option }}
+  </option>
+</select>
 <select v-model="chosen_series" class="select-css">
   <option v-for="option in series_choices" v-bind:value="option">
     {{ option }}
@@ -67,13 +75,11 @@ data are pulled directly from
     {{ option }}
   </option>
 </select>
-<select v-model="chosen_scale" class="select-css">
+<nobr><select v-model="chosen_scale" class="select-css">
   <option v-for="option in chosen_stat == 'deltas' ? ['linear'] : scale_choices" v-bind:value="option">
     {{ option }}
   </option>
 </select>
-&nbsp;
-<nobr>start:
 <select v-model="chosen_start" class="select-css">
   <option v-for="option in start_choices" v-bind:value="option">
     {{ option }}
@@ -156,7 +162,16 @@ function rollup_ts(series, state_filter, country_filter) {
   }
   return [ts_names, totals];
 }
-
+function norm_ctry(s) {
+  if (s == 'Korea, South') return 'S Korea';
+  if (s == 'United Kingdom') return 'UK';
+  return s;
+}
+function all_countries(series) {
+  var names = series[0],
+    country_i = fieldnum(names, 'country');
+  return _.sortBy(_.uniq(series.slice(1).map(x => norm_ctry(x[country_i]))))
+}
 function get_state_data(csse, field, chosen_abbrev, chosen_full) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
@@ -164,6 +179,16 @@ function get_state_data(csse, field, chosen_abbrev, chosen_full) {
        state.endsWith(chosen_abbrev) ||
        state == chosen_full },
     country => { return /^US$/.exec(country) });
+  deltas = series_deltas(totals);
+  return { dates: dates, totals: totals, deltas: deltas }
+}
+function get_national_data(csse, field, chosen_country) {
+  var dates, totals, deltas;
+  [dates, totals] = rollup_ts(csse[field],
+    null,
+    country => { return country != 'China' &&
+        (!chosen_country ||
+        (norm_ctry(country) == chosen_country)) });
   deltas = series_deltas(totals);
   return { dates: dates, totals: totals, deltas: deltas }
 }
@@ -227,27 +252,35 @@ function apply_start_rule(start, extracted) {
 // of time series data, by state abbreviation.  Ten states
 // are included, based on the highest numbers on the last day.
 //////////////////////////////////////////////////////////////////////
-function extract_data(csse, field, stat, scale) {
+function extract_data(csse, domain, field, stat, scale) {
+  domain = domain || 'US';
   field = field || 'confirmed';
   stat = stat || 'totals';
   scale = scale || 'log10';
-  var national_data = get_state_data(csse, field, null);
-  var first_nz = _.findIndex(national_data.totals, i => i > 0);
-  var national_series = national_data[stat].slice(first_nz);
-  var dates = national_data.dates.slice(first_nz);
-  var state_series = _.transform(USA_STATES, (r, v, k) => {
-    r[k] = get_state_data(csse, field, k, v)[stat].slice(first_nz);
-    if (/log/.exec(scale)) {
-      r[k] = r[k].map(x => x > 0 ? x : null)
-    }
-  });
-  function avg_last3(s) {
-    return _.sum(s.slice(-3)) / (1e-10 + s.slice(-3).length);
+  var get_local_data = domain == 'Intl' ?
+      get_national_data : get_state_data;
+  var global_data = get_local_data(csse, field, null);
+  var first_nz = _.findIndex(global_data.totals, i => i > 0);
+  var global_series = global_data[stat].slice(first_nz);
+  var dates = global_data.dates.slice(first_nz);
+  var state_series;
+  if (domain == 'Intl') {
+    var countries = all_countries(csse[field]);
+    state_series = _.fromPairs(countries.map(k => [k,
+      get_local_data(csse, field, k)[stat].slice(first_nz)]));
+  } else {
+    state_series = _.transform(USA_STATES, (r, v, k) => {
+      r[k] = get_local_data(csse, field, k, v)[stat].slice(first_nz);
+    });
+  }
+  if (/log/.exec(scale)) {
+    state_series = _.mapValues(state_series, s => s.map(x => x>0 ? x : null));
   }
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (avg_last3(y[1]) || 0) - (avg_last3(x[1]) || 0)
            ).slice(0, 10);
-  var series = _.concat([['US', national_series]], top_states);
+  var series = domain == 'Intl' ? top_states :
+       _.concat([[domain, global_series]], top_states);
   var desc_series = series.map(p => [p[0], p[1].map((x, i) =>
      { return { meta: p[0] + ' ' + dates[i], value: x }; })]);
   return {
@@ -316,6 +349,7 @@ var theapp = new Vue({
   router: new VueRouter(),
   data: {
     csse: null,
+    domain_choices: ['US', 'Intl'],
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
@@ -323,16 +357,18 @@ var theapp = new Vue({
   computed: {
     start_choices: function() {
       if (this.csse == null) { return ['']; }
-      var extract = extract_data(
-          this.csse, this.chosen_series, this.chosen_stat, this.chosen_scale);
+      var extract = extract_data(this.csse, this.chosen_domain,
+          this.chosen_series, this.chosen_stat, this.chosen_scale);
       return available_start_rules(extract);
     },
+    chosen_domain: url_property('domain', 'US'),
     chosen_series: url_property('series', 'confirmed'),
     chosen_stat: url_property('stat', 'totals'),
     chosen_scale: url_property('scale', 'log10'),
     chosen_start: url_property('start', '>=100'),
   },
   watch: {
+    chosen_domain: function(val) { this.draw_chart(); },
     chosen_series: function(val) { this.draw_chart(); },
     chosen_stat: function(val) {
       if (val == 'deltas' && this.chosen_scale == 'log10') {
@@ -348,8 +384,8 @@ var theapp = new Vue({
       if (this.start_choices.indexOf(this.chosen_start) < 0) {
         this.chosen_start = this.start_choices[0];
       }
-      var extract = extract_data(
-          this.csse, this.chosen_series, this.chosen_stat, this.chosen_scale);
+      var extract = extract_data(this.csse,  this.chosen_domain,
+          this.chosen_series, this.chosen_stat, this.chosen_scale);
       var shifted_extract = apply_start_rule(this.chosen_start, extract);
       plot_series(shifted_extract, this.chosen_scale);
     }
@@ -382,6 +418,9 @@ function url_property(name, default_value) {
     set(value) { this.$router.replace({query: _.defaults(
       { [name]: value }, this.$route.query) }).catch(err => {}); }
   };
+}
+function avg_last3(s) {
+  return _.sum(s.slice(-3)) / (1e-10 + s.slice(-3).length);
 }
 
 //////////////////////////////////////////////////////////////////////
