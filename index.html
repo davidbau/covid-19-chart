@@ -21,8 +21,7 @@ Simple COVID-19 charting code, single-page HTML javascript.
 chartist = Chartist; jquery = $;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
-<!--<script src="https://cdn.jsdelivr.net/npm/chartist-plugin-axistitle@0.0.7/dist/chartist-plugin-axistitle.min.js" integrity="sha256-prApUlf6GL5TScu+1fzXL6UDmTFLl9v2Bsk57h4zlK8=" crossorigin="anonymous"></script>-->
-<script src="https://cdn.jsdelivr.net/gh/alexstanbury/chartist-plugin-axistitle@master/dist/chartist-plugin-axistitle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartist-plugin-axistitle@0.0.7/dist/chartist-plugin-axistitle.min.js" integrity="sha256-prApUlf6GL5TScu+1fzXL6UDmTFLl9v2Bsk57h4zlK8=" crossorigin="anonymous"></script>
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script>
@@ -39,6 +38,20 @@ select { margin-top: 1px; margin-bottom: 1px; }
   font-size: .75rem;
   fill: rgba(0,0,0,0.4);
   color: rgba(0,0,0,0.4);
+}
+/* https://github.com/gionkunz/chartist-js/issues/54#issuecomment-456532507 */
+span.ct-label.ct-horizontal.ct-end {
+  display: inline-block;
+  justify-content: flex-end;
+  text-align: center;
+  transform: translate(-50%);
+  white-space:nowrap;
+}
+span.ct-label.ct-vertical.ct-start {
+  position: relative;
+  justify-content: flex-end;
+  transform: translate(0, 0.8ex);
+  white-space:nowrap;
 }
 @media only screen and (max-width:799px) {
   .ct-line { stroke-width: 2px; }
@@ -66,7 +79,7 @@ select { margin-top: 1px; margin-bottom: 1px; }
  :style="{display: chosen_bare == '1' ? 'none' : 'inline-block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
 COVID-19 Time Series <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:middle"></a></h1>
-<p>Stats on 10 {{ { US: 'states',
+<p>Stats on {{ chosen_top }} {{ { US: 'states',
   Intl: 'countries outside China'}[chosen_domain] }}
  with highest numbers; data are from
 <a href="https://github.com/CSSEGISandData/COVID-19/" >Johns Hopkins CSSE</a>.
@@ -406,7 +419,7 @@ function yaxis_title(field, stat, scale) {
 }
 function xaxis_title(start) {
   if (start.startsWith('>=')) {
-     return 'Days since ' + start.slice(2) + 'th case.';
+     return 'Days since ' + start.slice(2) + 'th case';
   }
   return '';
 }
@@ -446,7 +459,7 @@ function plot_series(extract, scale, xaxis, yaxis) {
     },
     chartPadding: {
       top: 50,
-      bottom: xaxis ? 15 : 5,
+      bottom: xaxis ? 10 : 0,
       left: 25,
       right: 10,
     },
@@ -456,7 +469,7 @@ function plot_series(extract, scale, xaxis, yaxis) {
         axisX: {
           axisTitle: xaxis,
           axisClass: "ct-axis-title",
-          offset: { x: 0, y: 30 },
+          offset: { x: 0, y: 35 },
           textAnchor: "middle"
         },
         axisY: {
