@@ -163,6 +163,11 @@ function rollup_ts(series, state_filter, country_filter) {
       totals[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
     }
   }
+  if (_.last(ts_names) == '3/23/20') {
+    // bad data day.
+    ts_names.pop();
+    totals.pop();
+  }
   return [ts_names, totals];
 }
 function norm_ctry(s) {
