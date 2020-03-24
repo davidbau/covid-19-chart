@@ -40,6 +40,7 @@ select { margin-top: 1px; margin-bottom: 1px; }
 @media only screen and (min-width:800px) {
   .pane-menu { display: inline-block; width: 26%; }
   .pane-chart { display: inline-block; width: 73%; float: right; }
+  .pane-credit div:first-child p:first-child { margin-top: 0; }
   .ct-line { stroke-width: 3px; }
   .ct-point { stroke-width: 8px; }
 }
@@ -55,9 +56,9 @@ select { margin-top: 1px; margin-bottom: 1px; }
 -->
 <div id="app">
 <div class="pane-menu"
- :style="{display: chosen_bare ? 'none' : 'inline-block'}">
+ :style="{display: chosen_bare == '1' ? 'none' : 'inline-block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
-COVID-19 Time Series</h1>
+COVID-19 Time Series <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:middle"></a></h1>
 <p>Stats on 10 {{ { US: 'states',
   Intl: 'countries outside China'}[chosen_domain] }}
  with highest numbers; data are from
@@ -91,9 +92,22 @@ COVID-19 Time Series</h1>
 <p>Click on the legend to toggle a series;
 hover on points for specific numbers.</p>
 </div
-><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
-><div class="pane-credit" :style="{display: chosen_bare ? 'none' : 'block'}">
-
+><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"
+ :style="chosen_bare == '1' ? { width: '100%', display: 'block' } : null">
+></div
+><div class="pane-credit"
+ :style="{display: chosen_bare == '1' ? 'none' : 'block'}">
+<div v-if="chosen_advanced == '1'">
+<p>
+Customized charts are directly linkable by URL.  URL parameters can be edited directly, or in the form below.  To plot a custom set of states or countries, use the "include" field; to omit the top 10, reduce the "top" field to zero.  Make bare plots for embedding with "bare=1".
+</p>
+<table>
+<tr><td>Top:</td><td><input v-model="chosen_top"> (Integer)</td></tr>
+<tr><td>Include:</td><td><input v-model="chosen_include"> (';' between states)</td></tr>
+<tr><td>Bare:</td><td> <input v-model="chosen_bare"> (1 or 0)</td></tr>
+</table>
+</div>
+<div v-else>
 <p>For policymakers, the chart can <a href="#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed">compare exponental growth of coronavirus cases</a>.
 Select the logarithmic totals with a &gt;=100 starting threshold, so that day zero is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and therefore the slopes, will reveal the differences.
 
@@ -102,9 +116,11 @@ Select the logarithmic totals with a &gt;=100 starting threshold, so that day ze
 <p>The graph automatically updates every day based on current data. Please share. And please isolate.
 
 <p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>, which reveals policy differences internationally.  It is an easy-to-modify HTML page (using chartist.js, vue.js, lodash.js); pull requests are welcome.
+</div>
 
-<p>Code and API for more options on
-<a href="https://github.com/davidbau/covid-19-chart">github, here</a>.
+<p><a href="javascript:" v-on:click="chosen_advanced = 1 - chosen_advanced"
+>Advanced customization here</a>.
+<a href="https://github.com/davidbau/covid-19-chart">Code on github here</a>.
 Open source. (MIT license.)
 <address>- <a href="http://davidbau.com/">David Bau</a></address>
 </div></div></body>
@@ -388,7 +404,8 @@ var theapp = new Vue({
     chosen_start: url_property('start', '>=100'),
     chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
-    chosen_bare: url_property('bare', ''),
+    chosen_bare: url_property('bare', '0'),
+    chosen_advanced: url_property('advanced', '0'),
   },
   watch: {
     extracted_data: function(val) { this.draw_chart(); },
