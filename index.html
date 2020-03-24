@@ -175,13 +175,20 @@ function all_countries(series) {
     country_i = fieldnum(names, 'country');
   return _.sortBy(_.uniq(series.slice(1).map(x => norm_ctry(x[country_i]))))
 }
-function get_state_data(csse, field, chosen_abbrev, chosen_full) {
+function get_local_data(csse, field, locality) {
+  if (locality in USA_STATES) {
+    return get_state_data(csse, field, locality);
+  } else {
+    return get_national_data(csse, field, locality);
+  }
+}
+function get_state_data(csse, field, chosen_abbrev) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
     state => { return !chosen_abbrev ||
        state.endsWith(chosen_abbrev) ||
-       state == chosen_full },
-    country => { return /^US$/.exec(country) });
+       state == USA_STATES[chosen_abbrev] },
+    country => { return country == 'US' });
   deltas = series_deltas(totals);
   return { dates: dates, totals: totals, deltas: deltas }
 }
@@ -262,41 +269,36 @@ function extract_data(csse, domain, field, stat, scale, topcount, include) {
   stat = stat || 'totals';
   scale = scale || 'log10';
   topcount = topcount || 10;
-  var get_local_data = domain == 'Intl' ?
-      get_national_data : get_state_data;
-  var global_data = get_local_data(csse, field, null);
+  var get_global_data = domain == 'Intl' ?  get_national_data : get_state_data;
+  var global_data = get_global_data(csse, field);
   var first_nz = _.findIndex(global_data.totals, i => i > 0);
   var global_series = global_data[stat].slice(first_nz);
   var dates = global_data.dates.slice(first_nz);
-  var state_series;
-  if (domain == 'Intl') {
-    var countries = all_countries(csse[field]);
-    state_series = _.fromPairs(countries.map(k => [k,
+  var localities = (domain == 'Intl' ?
+      all_countries(csse[field]) : _.keys(USA_STATES));
+  var state_series = _.fromPairs(localities.map(k => [k,
       get_local_data(csse, field, k)[stat].slice(first_nz)]));
-  } else {
-    state_series = _.transform(USA_STATES, (r, v, k) => {
-      r[k] = get_local_data(csse, field, k, v)[stat].slice(first_nz);
-    });
-  }
-  if (/log/.exec(scale)) {
-    state_series = _.mapValues(state_series, s => s.map(x => x>0 ? x : null));
-  }
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (avg_last3(y[1]) || 0) - (avg_last3(x[1]) || 0)
            ).slice(0, parseInt(topcount));
   var included = _.fromPairs(top_states);
   for (var inc of include.split(';')) {
-    if (!(inc in included) && inc in state_series) {
-      top_states.push([inc, state_series[inc]]);
+    console.log(included);
+    if (!included.hasOwnProperty(inc)) {
+      console.log(inc);
+      var extra = get_local_data(csse, field, inc)[stat].slice(first_nz);
+      top_states.push([inc, extra])
     }
   }
-  var series = domain == 'Intl' ? top_states :
-       _.concat([[domain, global_series]], top_states);
-  var desc_series = series.map(p => [p[0], p[1].map((x, i) =>
+  if (/log/.exec(scale)) {
+    top_states = _.map(top_states, p => [p[0], p[1].map(x => x>0 ? x : null)]);
+  }
+  if (domain != 'Intl') { top_states.unshift([domain, global_series]); }
+  var described_series = top_states.map(p => [p[0], p[1].map((x, i) =>
      { return { meta: p[0] + ' ' + dates[i], value: x }; })]);
   return {
     labels: dates,
-    series: desc_series
+    series: described_series
   };
 }
 
@@ -373,14 +375,14 @@ var theapp = new Vue({
     extracted_data: function() {
       return extract_data(this.csse, this.chosen_domain,
           this.chosen_series, this.chosen_stat, this.chosen_scale,
-          this.chosen_topcount, this.chosen_include);
+          this.chosen_top, this.chosen_include);
     },
     chosen_domain: url_property('domain', 'US'),
     chosen_series: url_property('series', 'confirmed'),
     chosen_stat: url_property('stat', 'totals'),
     chosen_scale: url_property('scale', 'log10'),
     chosen_start: url_property('start', '>=100'),
-    chosen_topcount: url_property('topcount', '10'),
+    chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
     chosen_bare: url_property('bare', ''),
   },

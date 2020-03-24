@@ -35,7 +35,7 @@ created by directly using the URL API.
 * `stat`: totals or deltas.
 * `scale`: linear or log10.
 * `start`: a date or >= expression as in the menu.
-* `topcount`: zero or more top states or countries to include.
+* `top`: integer how how many top states or countries to include.
 * `include`: semicolon-separated list of states or countries to include.
 * `bare`: set to 1 to show just the chart (e.g., for embedding).
 
