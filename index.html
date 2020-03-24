@@ -119,37 +119,49 @@ var csse = null, chart = null;
 // "Recovered".  The data in the last category seems inconsistent
 // so is not included in the current graph.
 //////////////////////////////////////////////////////////////////////
-function csv_url(domain, seriesname) {
-  var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
-    "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
+var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
+  "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
+var daily_base_url = "https://raw.githubusercontent.com/CSSEGISandData" + 
+  "/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/";
+
+function ts_url(seriesname, domain) {
   return ts_base_url + "time_series_covid19_" + seriesname
        + "_" + domain + ".csv";
 }
-function load_csse_data(loaded) {
-  var results = {}, pending = 0;
-  'confirmed deaths'.split(' ').map(s => {
-    results[s] = {};
-    'global'.split(' ').map(d => {
-      pending += 1;
-      Papa.parse(csv_url(d, s), {
-        download: true,
-        complete: r => {
-          results[s][d] = r.data;
-          pending -= 1;
-          if (!pending) loaded(merge_us_global(results));
-        }
-      })
-    })
-  })
+function old_ts_url(seriesname) {
+  return ts_base_url + "time_series_19-covid-" + seriesname + '.csv';
 }
-function merge_us_global(splits) {
+function daily_url(date) {
+  return daily_base_url + date + '.csv';
+}
+function load_csse_data(loaded) {
+  var needed = {
+    confirmed_global: ts_url('confirmed', 'global'),
+    deaths_global: ts_url('deaths', 'global'),
+    confirmed_old: old_ts_url('Confirmed'),
+    deaths_old: old_ts_url('Deaths'),
+    daily_03_23_2020: daily_url('03-23-2020')
+  };
+  var results = {}, pending = 0;
+  _.forOwn(needed, (url, k) => {
+    pending += 1;
+    Papa.parse(url, {
+      download: true,
+      complete: r => {
+        results[k] = r.data;
+        pending -= 1;
+        if (!pending) loaded(merge_sources(results));
+      }
+    })
+  });
+}
+function merge_sources(splits) {
   var results = {};
   for (var s of ['confirmed', 'deaths']) {
-    var d = splits[s];
-    var names_g = d.global[0];
+    var d = splits[s + '_global'];
     // var names_u = d.us[0];
     // results[s] = _.concat(d.global, d.us.slice(1));
-    results[s] = d.global;
+    results[s] = d;
   }
   return results;
 }
