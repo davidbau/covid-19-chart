@@ -135,24 +135,37 @@ var csse = null, chart = null;
 // "Recovered".  The data in the last category seems inconsistent
 // so is not included in the current graph.
 //////////////////////////////////////////////////////////////////////
-function csv_url(seriesname) {
+function csv_url(domain, seriesname) {
   var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
     "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
-  return ts_base_url + "time_series_19-covid-" + seriesname + ".csv";
+  return ts_base_url + "time_series_19-covid-" + seriesname
+       + "_" + domain + ".csv";
 }
-
 function load_csse_data(loaded) {
-  var results = {}, pending = 3;
-  'Confirmed Deaths Recovered'.split(' ').map(s => {
-    Papa.parse(csv_url(s), {
-      download: true,
-      complete: r => {
-        results[s.toLowerCase()] = r.data;
-        pending -= 1;
-        if (!pending) loaded(results);
-      }
+  var results = {}, pending = 4;
+  'confirmed deaths'.split(' ').map(s => {
+    results[s] = {};
+    'us global'.split(' ').map(d => {
+      Papa.parse(csv_url(d, s), {
+        download: true,
+        complete: r => {
+          results[s][d] = r.data;
+          pending -= 1;
+          if (!pending) loaded(merge_us_global(results));
+        }
+      })
     })
   })
+}
+function merge_us_global(splits) {
+  var results = {};
+  for (var s of ['confirmed', 'deaths']) {
+    var d = splits[s];
+    var names_g = d.global[0];
+    var names_u = d.us[0];
+    results[s] = _.concat(d.global, d.us.slice(1));
+  }
+  return results;
 }
 
 //////////////////////////////////////////////////////////////////////
