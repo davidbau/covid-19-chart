@@ -122,14 +122,15 @@ var csse = null, chart = null;
 function csv_url(domain, seriesname) {
   var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
     "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
-  return ts_base_url + "time_series_19-covid-" + seriesname
+  return ts_base_url + "time_series_covid19_" + seriesname
        + "_" + domain + ".csv";
 }
 function load_csse_data(loaded) {
-  var results = {}, pending = 4;
+  var results = {}, pending = 0;
   'confirmed deaths'.split(' ').map(s => {
     results[s] = {};
-    'us global'.split(' ').map(d => {
+    'global'.split(' ').map(d => {
+      pending += 1;
       Papa.parse(csv_url(d, s), {
         download: true,
         complete: r => {
@@ -146,8 +147,9 @@ function merge_us_global(splits) {
   for (var s of ['confirmed', 'deaths']) {
     var d = splits[s];
     var names_g = d.global[0];
-    var names_u = d.us[0];
-    results[s] = _.concat(d.global, d.us.slice(1));
+    // var names_u = d.us[0];
+    // results[s] = _.concat(d.global, d.us.slice(1));
+    results[s] = d.global;
   }
   return results;
 }
