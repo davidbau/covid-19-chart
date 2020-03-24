@@ -21,8 +21,10 @@ Simple COVID-19 charting code, single-page HTML javascript.
 chartist = Chartist; jquery = $;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
-<script src="lib/chartist-plugin-legend.js"></script>
-<script src="lib/chartist-logaxis.js"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/chartist-plugin-axistitle@0.0.7/dist/chartist-plugin-axistitle.min.js" integrity="sha256-prApUlf6GL5TScu+1fzXL6UDmTFLl9v2Bsk57h4zlK8=" crossorigin="anonymous"></script>-->
+<script src="https://cdn.jsdelivr.net/gh/alexstanbury/chartist-plugin-axistitle@master/dist/chartist-plugin-axistitle.js"></script>
+<script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
+<script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script>
 <script src="lib/usa_states.js"></script>
 <link rel="stylesheet" href="lib/select.css">
@@ -33,6 +35,11 @@ body { background: #FFF1E3; color: #333;
 h1 { font-size: 14pt; }
 .buttonrow { text-align: center; }
 select { margin-top: 1px; margin-bottom: 1px; }
+.ct-axis-title {
+  font-size: .75rem;
+  fill: rgba(0,0,0,0.4);
+  color: rgba(0,0,0,0.4);
+}
 @media only screen and (max-width:799px) {
   .ct-line { stroke-width: 2px; }
   .ct-point { stroke-width: 5px; }
@@ -391,19 +398,32 @@ function extract_data(csse, domain, field, stat, scale, topcount, include) {
   };
 }
 
+function yaxis_title(field, stat, scale) {
+  var desc = {totals: 'Total cumulative ', delta: 'Daily new '}[stat] +
+             {confirmed: 'confirmed cases', deaths: 'deaths'}[field] +
+             (scale && scale.startsWith('log') ? ' (log scale)' : '');
+  return desc;
+}
+function xaxis_title(start) {
+  if (start.startsWith('>=')) {
+     return 'Days since ' + start.slice(2) + 'th case.';
+  }
+  return '';
+}
+
 //////////////////////////////////////////////////////////////////////
 // Plotting.
 // The extract data is plotted using chartist.js,
 // using the given scale.
 //////////////////////////////////////////////////////////////////////
-function plot_series(extract, scale) {
+function plot_series(extract, scale, xaxis, yaxis) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
   chart = new Chartist.Line('#chart', {
     labels: extract.labels.map(x => {
       if (!x) return x;
       x = '' + x;
-      return x.replace(/(\d+)\/(\d+)\/20$/, '$1/\n$2');
+      return x.replace(/(\d+)\/(\d+)\/20$/, '$1/$2');
     }),
     series: extract.series.map(x => x[1]),
   }, {
@@ -426,15 +446,30 @@ function plot_series(extract, scale) {
     },
     chartPadding: {
       top: 50,
-      bottom: 10,
-      left: 20,
+      bottom: xaxis ? 15 : 5,
+      left: 25,
       right: 10,
     },
     plugins: [
+      Chartist.plugins.tooltip(),
+      Chartist.plugins.ctAxisTitle({
+        axisX: {
+          axisTitle: xaxis,
+          axisClass: "ct-axis-title",
+          offset: { x: 0, y: 30 },
+          textAnchor: "middle"
+        },
+        axisY: {
+          axisTitle: yaxis,
+          axisClass: "ct-axis-title",
+          offset: { x: 0, y: 10 },
+          flipTitle: true
+        }
+      }),
+      // Must be last to not intefere with axis titles.
       Chartist.plugins.legend({
         legendNames: extract.series.map(x => x[0])
       }),
-      Chartist.plugins.tooltip()
     ]
   });
   preparePrintChart(chart);
@@ -493,7 +528,11 @@ var theapp = new Vue({
       }
       var extract = this.extracted_data;
       var shifted_extract = apply_start_rule(this.chosen_start, extract);
-      plot_series(shifted_extract, this.chosen_scale);
+
+      var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
+          this.chosen_scale);
+      var xtitle = xaxis_title(this.chosen_start);
+      plot_series(shifted_extract, this.chosen_scale, xtitle, ytitle);
     }
   }
 });
