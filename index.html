@@ -174,12 +174,52 @@ function load_csse_data(loaded) {
 function merge_sources(splits) {
   var results = {};
   for (var s of ['confirmed', 'deaths']) {
-    var d = splits[s + '_global'];
-    // var names_u = d.us[0];
-    // results[s] = _.concat(d.global, d.us.slice(1));
-    results[s] = d;
+    var data = splits[s + '_global'];
+    var country_i = fieldnum(data[0], 'country');
+    data = data.filter((r, i) => i == 0 || r[country_i] != 'US'); // remove US
+    // Hopefully the patchwork here can be removed after CSSE fixes its
+    // data feed.  For now we patch together the misformatted data.
+    var old = splits[s + '_old'];
+    country_i = fieldnum(old[0], 'country');
+    old = old.filter((r, i) => i == 0 || r[country_i] == 'US'); // US only
+    var bad_date_i = fieldnum(old[0], '3/23/20');
+    _.forEach(old, (r) => r[bad_date_i] = null); // Erase bad data day
+    add_rows(data, old);
+    var day = splits.daily_03_23_2020;
+    country_i = fieldnum(day[0], 'country');
+    day = day.filter((r, i) => i == 0 || r[country_i] == 'US'); // US only
+    add_day(data, day, '3/23/20', s);
+    results[s] = data;
   }
   return results;
+}
+function add_rows(data, added) {
+  var indexmap = _.fromPairs(data[0].map((n, i) => [n, i]));
+  var supplied = added[0];
+  for (var row of added.slice(1)) {
+    var translated = new Array(data[0].length);
+    for (var i in row) {
+      if (indexmap.hasOwnProperty(supplied[i])) {
+        translated[indexmap[supplied[i]]] = row[i];
+      }
+    }
+    data.push(translated);
+  }
+}
+function add_day(data, singleday, date, columnname) {
+  var state_ti = fieldnum(data[0], 'state'),
+    country_ti = fieldnum(data[0], 'country'),
+    data_ti = fieldnum(data[0], date),
+    state_i = fieldnum(singleday[0], 'state'),
+    country_i = fieldnum(singleday[0], 'country'),
+    data_i = fieldnum(singleday[0], columnname);
+  for (var row of singleday.slice(1)) {
+    var newrow = new Array(data[0].length);
+    newrow[country_ti] = row[country_i];
+    newrow[state_ti] = row[state_i];
+    newrow[data_ti] = row[data_i];
+    data.push(newrow);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -206,11 +246,13 @@ function rollup_ts(series, state_filter, country_filter) {
       totals[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
     }
   }
+  /*
   if (_.last(ts_names) == '3/23/20') {
     // bad data day.
     ts_names.pop();
     totals.pop();
   }
+  */
   return [ts_names, totals];
 }
 function norm_ctry(s) {
