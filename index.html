@@ -78,7 +78,7 @@ span.ct-label.ct-vertical.ct-start {
 <div class="pane-menu"
  :style="{display: chosen_bare == '1' ? 'none' : 'inline-block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
-COVID-19 Time Series <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:middle"></a></h1>
+COVID-19 <nobr>Time Series <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:middle"></a></nobr></h1>
 <p>Stats on {{ chosen_top }} {{ { US: 'states',
   Intl: 'countries outside China'}[chosen_domain] }}
  with highest numbers; data are from
@@ -333,6 +333,18 @@ function available_start_rules(extracted) {
   var gt_rules = [10, 100, 1000].filter(x => (x < third_v)).map(x => '>=' + x);
   return _.concat([first_d], other_d, gt_rules);
 }
+function allowable_start_rule(extracted, rule) {
+  if (parse_date(rule)) {
+    var dates = extracted.labels;
+    return dates.filter(x => x == rule).length > 0;
+  }
+  if (rule.startsWith('>=')) {
+    var top_v = _.sortBy(extracted.series.map(
+        x => _.max(x[1].map(x => x.value))), x => -x)[0];
+    return top_v >= parseInt(rule.slice(2));
+  }
+  return false;
+}
 function apply_start_rule(start, extracted) {
   var labels = extracted.labels;
   var data_series = extracted.series;
@@ -507,7 +519,14 @@ var theapp = new Vue({
   computed: {
     start_choices: function() {
       if (this.csse == null) { return ['1/1/20', '>=100', '>=1000']; }
-      return available_start_rules(this.extracted_data);
+      var extract = this.extracted_data;
+      var choices = available_start_rules(extract);
+      if (this.chosen_start && choices.indexOf(this.chosen_start) < 0) {
+        if (allowable_start_rule(extract, this.chosen_start)) {
+          choices.unshift(this.chosen_start);
+        }
+      }
+      return choices;
     },
     extracted_data: function() {
       return extract_data(this.csse, this.chosen_domain,
@@ -536,10 +555,10 @@ var theapp = new Vue({
   },
   methods: {
     draw_chart: function() {
-      if (this.start_choices.indexOf(this.chosen_start) < 0) {
+      var extract = this.extracted_data;
+      if (!allowable_start_rule(extract, this.chosen_start)) {
         this.chosen_start = this.start_choices[0];
       }
-      var extract = this.extracted_data;
       var shifted_extract = apply_start_rule(this.chosen_start, extract);
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
