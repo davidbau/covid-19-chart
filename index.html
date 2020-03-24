@@ -160,7 +160,7 @@ function rollup_ts(series, state_filter, country_filter) {
       continue;
     }
     for (var i = ts_i; i < names.length; ++i) {
-      totals[i - ts_i] += (row[i] == '' ? 0 : parseInt(row[i]));
+      totals[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
     }
   }
   return [ts_names, totals];
@@ -173,7 +173,8 @@ function norm_ctry(s) {
 function all_countries(series) {
   var names = series[0],
     country_i = fieldnum(names, 'country');
-  return _.sortBy(_.uniq(series.slice(1).map(x => norm_ctry(x[country_i]))))
+  var all = _.sortBy(_.uniq(series.slice(1).map(x => norm_ctry(x[country_i]))));
+  return _.filter(all, x => x && x != 'China');
 }
 function get_local_data(csse, field, locality) {
   if (locality in USA_STATES) {
@@ -196,9 +197,9 @@ function get_national_data(csse, field, chosen_country) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
     null,
-    country => { return country != 'China' &&
-        (!chosen_country ||
-        (norm_ctry(country) == chosen_country)) });
+    country =>
+        (!chosen_country && (country != 'China') ||
+         (norm_ctry(country) == chosen_country)) );
   deltas = series_deltas(totals);
   return { dates: dates, totals: totals, deltas: deltas }
 }
@@ -283,9 +284,7 @@ function extract_data(csse, domain, field, stat, scale, topcount, include) {
            ).slice(0, parseInt(topcount));
   var included = _.fromPairs(top_states);
   for (var inc of include.split(';')) {
-    console.log(included);
-    if (!included.hasOwnProperty(inc)) {
-      console.log(inc);
+    if (inc && !included.hasOwnProperty(inc)) {
       var extra = get_local_data(csse, field, inc)[stat].slice(first_nz);
       top_states.push([inc, extra])
     }
