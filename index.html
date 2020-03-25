@@ -135,6 +135,14 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td>Theme:</td><td><input v-model.lazy="chosen_theme"> (white/dark/paper)</td></tr>
 <tr><td>Advanced:</td><td> <input v-model.lazy="chosen_advanced"> (1 or 0)</td></tr>
 <tr><td>Bare:</td><td> <input v-model.lazy="chosen_bare"> (1 or 0)</td></tr>
+<tr><td colspan=2">
+Bare chart embed code:<br>
+<textarea style="width:220px;height:40px;word-wrap:break-word;word-break:break-all;white-space:pre-wrap" readonly onclick="this.focus();this.select();">
+&lt;iframe width="500" height="388" src="{{
+siteurl+'#'+$route.fullPath.replace(/bare|advanced=\d*/, '')+'&bare=1'
+}}"></iframe>
+</textarea>
+</td></tr>
 </table>
 </div>
 <div v-else>
@@ -599,6 +607,7 @@ var theapp = new Vue({
   router: new VueRouter(),
   data: {
     csse: null,
+    siteurl: window.location.protocol + '//' + window.location.host + '/',
     domain_choices: ['US', 'Intl'],
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
