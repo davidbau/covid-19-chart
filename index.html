@@ -661,7 +661,8 @@ var theapp = new Vue({
       plot_series(shifted_extract, this.chosen_scale, xtitle, ytitle);
     },
     make_url: function(opts) {
-      return this.siteurl + this.$router.resolve({query:opts}).href;
+      return this.siteurl + this.$router.resolve(
+          {query: _.defaults(opts, this.$route.query)}).href;
     },
     print_page: function() {
       var printwindow = window.open(this.make_url({bare:1,theme:'white'}));
