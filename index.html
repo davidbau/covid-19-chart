@@ -33,7 +33,7 @@ chartist = Chartist; jquery = $;
 <script src="lib/chartist-print.js"></script>
 <script src="lib/usa_states.js"></script>
 <link rel="stylesheet" href="lib/select.css">
-<link rel="stylesheet" href="lib/chart.css">
+<link rel="stylesheet" href="lib/custom-chart.css">
 <style>
 [v-cloak] { display: none }
 body { background: #FFF1E3; color: #333;
@@ -41,25 +41,6 @@ body { background: #FFF1E3; color: #333;
 h1 { font-size: 14pt; }
 .buttonrow { text-align: center; }
 select { margin-top: 1px; margin-bottom: 1px; }
-.ct-axis-title {
-  font-size: .75rem;
-  fill: rgba(0,0,0,0.4);
-  color: rgba(0,0,0,0.4);
-}
-/* https://github.com/gionkunz/chartist-js/issues/54#issuecomment-456532507 */
-span.ct-label.ct-horizontal.ct-end {
-  display: inline-block;
-  justify-content: flex-end;
-  text-align: center;
-  transform: translate(-50%);
-  white-space:nowrap;
-}
-span.ct-label.ct-vertical.ct-start {
-  position: relative;
-  justify-content: flex-end;
-  transform: translate(0, 0.8ex);
-  white-space:nowrap;
-}
 @media only screen and (max-width:799px) {
   .ct-line { stroke-width: 2px; }
   .ct-point { stroke-width: 5px; }
