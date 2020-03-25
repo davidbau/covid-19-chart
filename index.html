@@ -208,6 +208,7 @@ function load_csse_data(loaded) {
     Papa.parse(url, {
       download: true,
       complete: r => {
+        r.data[0] = _.map(r.data[0], normalize_date);
         results[k] = r.data;
         if (k == 'confirmed_global') {
           for (var bad_date of get_bad_date_list(r.data)) {
@@ -233,6 +234,11 @@ function get_bad_date_list(series) {
 function format_date_filename(d) {
   var p = parse_date(d);
   return ('0' + p[1]).slice(-2) + '-' + ('0' + p[2]).slice(-2) + '-20' + p[3];
+}
+function normalize_date(d) {
+  var p = parse_date(d);
+  if (!p) { return d; }
+  return p[1] + '/' + p[2] + '/' + p[3];
 }
 function merge_sources(splits) {
   var results = {};
@@ -669,7 +675,7 @@ function series_deltas(series) {
   return deltas;
 }
 function parse_date(name) {
-  return /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/.exec(name);
+  return /^(\d{1,2})\/(\d{1,2})\/(?:20)?(\d{2})$/.exec(name);
 }
 function fieldnum(names, pat) {
   return names.findIndex(n => RegExp(pat, 'i').exec(n))
