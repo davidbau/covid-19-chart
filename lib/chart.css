@@ -1,3 +1,22 @@
+.ct-axis-title {
+  font-size: .75rem;
+  fill: rgba(0,0,0,0.4);
+  color: rgba(0,0,0,0.4);
+}
+/* https://github.com/gionkunz/chartist-js/issues/54#issuecomment-456532507 */
+span.ct-label.ct-horizontal.ct-end {
+  display: inline-block;
+  justify-content: flex-end;
+  text-align: center;
+  transform: translate(-50%);
+  white-space:nowrap;
+}
+span.ct-label.ct-vertical.ct-start {
+  position: relative;
+  justify-content: flex-end;
+  transform: translate(0, 0.8ex);
+  white-space:nowrap;
+}
 .ct-grid {
   stroke-dasharray: none;
 }
