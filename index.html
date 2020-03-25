@@ -159,7 +159,7 @@ var csse = null, chart = null;
 //////////////////////////////////////////////////////////////////////
 var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
   "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
-var daily_base_url = "https://raw.githubusercontent.com/CSSEGISandData" + 
+var daily_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
   "/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/";
 
 function ts_url(seriesname, domain) {
@@ -178,21 +178,39 @@ function load_csse_data(loaded) {
     deaths_global: ts_url('deaths', 'global'),
     confirmed_old: old_ts_url('Confirmed'),
     deaths_old: old_ts_url('Deaths'),
-    'daily_03-23-2020': daily_url('03-23-2020'),
-    'daily_03-24-2020': daily_url('03-24-2020')
+  // Daily files are now autmoatically discovered.
+  // We will load them individually until the US time series API appears.
+  //  'daily_03-23-2020': daily_url('03-23-2020'),
+  //  'daily_03-24-2020': daily_url('03-24-2020')
   };
   var results = {}, pending = 0;
-  _.forOwn(needed, (url, k) => {
+  function start_download(k) {
     pending += 1;
+    url = needed[k];
     Papa.parse(url, {
       download: true,
       complete: r => {
         results[k] = r.data;
+        if (k == 'confirmed_global') {
+          for (var bad_date of get_bad_date_list(r.data)) {
+            var bd_filename = format_date_filename(bad_date);
+            if (!needed.hasOwnProperty(bd_filename)) {
+              var new_k = 'daily_' + bd_filename;
+              needed[new_k] = daily_url(bd_filename);
+              start_download(new_k);
+            }
+          }
+        }
         pending -= 1;
         if (!pending) loaded(merge_sources(results));
       }
-    })
-  });
+    });
+  }
+  _.forOwn(needed, (url, k) => { start_download(k); });
+}
+function get_bad_date_list(series) {
+  var first_bad_date_i = fieldnum(series[0], '3/23/20');
+  return series[0].slice(first_bad_date_i);
 }
 function format_date_filename(d) {
   var p = parse_date(d);
@@ -209,9 +227,7 @@ function merge_sources(splits) {
     var old = splits[s + '_old'];
     country_i = fieldnum(old[0], 'country');
     old = old.filter((r, i) => i == 0 || r[country_i] == 'US'); // US only
-    var first_bad_date_i = fieldnum(data[0], '3/23/20');
-    for (var i = first_bad_date_i; i < data[0].length; i++) {
-      var bad_date = data[0][i];
+    for (var bad_date of get_bad_date_list(data)) {
       var bad_date_i = fieldnum(old[0], bad_date);
       if (bad_date_i >= 0) {
         _.forEach(old, (r) => r[bad_date_i] = null); // Erase bad data day
