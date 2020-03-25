@@ -81,7 +81,8 @@ span.ct-label.ct-vertical.ct-start {
 <div class="pane-menu"
  :style="{display: chosen_bare == '1' ? 'none' : 'inline-block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
-COVID-19 <nobr>Live Chart <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:middle"></a></nobr></h1>
+COVID-19 <nobr>Live Chart <span v-if="chosen_advanced == '1'">API</a>
+<a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:middle"></a></nobr></h1>
 <p><span v-if="parseInt(chosen_top) > 0">Stats on {{ chosen_top }}
 {{ { US: 'states', Intl: 'countries outside China'}[chosen_domain] }}
 with highest numbers.</span> Data are from
