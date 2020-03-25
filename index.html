@@ -22,6 +22,7 @@ chartist = Chartist; jquery = $;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-axistitle@0.0.7/dist/chartist-plugin-axistitle.min.js" integrity="sha256-prApUlf6GL5TScu+1fzXL6UDmTFLl9v2Bsk57h4zlK8=" crossorigin="anonymous"></script>
+<script src="lib/chartist-plugin-pointlabels.js"></script>
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script>
@@ -177,7 +178,8 @@ function load_csse_data(loaded) {
     deaths_global: ts_url('deaths', 'global'),
     confirmed_old: old_ts_url('Confirmed'),
     deaths_old: old_ts_url('Deaths'),
-    daily_03_23_2020: daily_url('03-23-2020')
+    'daily_03-23-2020': daily_url('03-23-2020'),
+    'daily_03-24-2020': daily_url('03-24-2020')
   };
   var results = {}, pending = 0;
   _.forOwn(needed, (url, k) => {
@@ -192,6 +194,10 @@ function load_csse_data(loaded) {
     })
   });
 }
+function format_date_filename(d) {
+  var p = parse_date(d);
+  return ('0' + p[1]).slice(-2) + '-' + ('0' + p[2]).slice(-2) + '-20' + p[3];
+}
 function merge_sources(splits) {
   var results = {};
   for (var s of ['confirmed', 'deaths']) {
@@ -203,13 +209,19 @@ function merge_sources(splits) {
     var old = splits[s + '_old'];
     country_i = fieldnum(old[0], 'country');
     old = old.filter((r, i) => i == 0 || r[country_i] == 'US'); // US only
-    var bad_date_i = fieldnum(old[0], '3/23/20');
-    _.forEach(old, (r) => r[bad_date_i] = null); // Erase bad data day
-    add_rows(data, old);
-    var day = splits.daily_03_23_2020;
-    country_i = fieldnum(day[0], 'country');
-    day = day.filter((r, i) => i == 0 || r[country_i] == 'US'); // US only
-    add_day(data, day, '3/23/20', s);
+    var first_bad_date_i = fieldnum(data[0], '3/23/20');
+    for (var i = first_bad_date_i; i < data[0].length; i++) {
+      var bad_date = data[0][i];
+      var bad_date_i = fieldnum(old[0], bad_date);
+      if (bad_date_i >= 0) {
+        _.forEach(old, (r) => r[bad_date_i] = null); // Erase bad data day
+        add_rows(data, old);
+      }
+      var day = splits['daily_' + format_date_filename(bad_date)];
+      country_i = fieldnum(day[0], 'country');
+      day = day.filter((r, i) => i == 0 || r[country_i] == 'US'); // US only
+      add_day(data, day, bad_date, s);
+    }
     results[s] = data;
   }
   return results;
@@ -359,6 +371,10 @@ function apply_start_rule(start, extracted) {
         return null;
       }
     }
+    data_series.forEach(p => {
+      var lastPoint = _.last(p[1]);
+      lastPoint.pointLabel = lastPoint.meta.replace(/ \d+\/\d+\/\d+$/, '');
+    });
     data_series = data_series.map(x => [x[0], shift_series(x[1], min_v)]);
     data_series = data_series.filter(x => !!x[1]);
     labels = _.range(0, _.max(data_series.map(x => x[1].length)));
@@ -423,7 +439,6 @@ function extract_data(csse, domain, field, stat, scale, topcount, include) {
     series: described_series
   };
 }
-
 function yaxis_title(field, stat, scale) {
   var desc = {totals: 'Total cumulative ', delta: 'Daily new '}[stat] +
              {confirmed: 'confirmed cases', deaths: 'deaths'}[field] +
@@ -496,6 +511,9 @@ function plot_series(extract, scale, xaxis, yaxis) {
       Chartist.plugins.legend({
         legendNames: extract.series.map(x => x[0])
       }),
+      Chartist.plugins.ctPointLabels({
+        textAnchor: 'middle'
+      })
     ]
   });
   preparePrintChart(chart);
