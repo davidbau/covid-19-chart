@@ -146,10 +146,10 @@ siteurl+'#'+$route.fullPath.replace(/bare|advanced=\d*/, '')+'&bare=1'
 </table>
 </div>
 <div v-else>
-<p>For policymakers, the chart can <a href="#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed">compare exponental growth of coronavirus cases</a>.
+<p>For policymakers, the chart can <a :href="'#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed&theme='+chosen_theme">compare exponental growth of coronavirus cases</a>.
 Select the logarithmic totals with a &gt;=100 starting threshold, so that day zero is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and therefore the slopes, will reveal the differences.
 
-<p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a href="#/?scale=linear&stat=deltas&start=2%2F29%2F20&series=deaths">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
+<p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a :href="'#/?scale=linear&stat=deltas&start=2%2F29%2F20&series=deaths&theme='+chosen_theme">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
 
 <p>The graph automatically updates every day based on current data. Please share. And please isolate.
 
