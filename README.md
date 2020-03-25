@@ -10,6 +10,8 @@ reported deaths and confirmed cases.
 <a href="https://covid19chart.org">See the live chart at
 covid19chart.org</a>.
 
+<img src="http://covid19chart.org/image/covid19chart_site_image.png">
+
 My physician wife wanted to see some summaries of U.S. covid-19
 stats that are not graphed in the press, so I wrote this short HTML
 page to create those rollups.  I have now packaged it as an API
@@ -44,4 +46,5 @@ created by directly using the URL API.
 * `bare`: set to 1 to show just the chart (e.g., for embedding).
 
 The URL can be edited directly, or the "Advanced options" link can be
-used to toggle the advanced customzization form.
+used to toggle the advanced customzization form.   More information in
+this <a href="http://davidbau.com/archives/2020/03/25/covid19_chart_api.html">blog post</a>.
