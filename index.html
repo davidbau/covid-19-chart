@@ -82,9 +82,9 @@ span.ct-label.ct-vertical.ct-start {
  :style="{display: chosen_bare == '1' ? 'none' : 'inline-block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
 COVID-19 <nobr>Time Series <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:middle"></a></nobr></h1>
-<p>Stats on {{ chosen_top }} {{ { US: 'states',
-  Intl: 'countries outside China'}[chosen_domain] }}
- with highest numbers; data are from
+<p><span v-if="parseInt(chosen_top) > 0">Stats on {{ chosen_top }}
+{{ { US: 'states', Intl: 'countries outside China'}[chosen_domain] }}
+with highest numbers.</span> Data are from
 <a href="https://github.com/CSSEGISandData/COVID-19/" >Johns Hopkins CSSE</a>.
 <p class="buttonrow">
 <select v-model="chosen_domain" class="select-css">
@@ -127,7 +127,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <table>
 <tr><td>Top:</td><td><input v-model.lazy="chosen_top"> (Integer)</td></tr>
 <tr><td>Include:</td><td><input v-model.lazy="chosen_include"> (';' between states)</td></tr>
-<tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=number, or mm/dd/yy)</td></tr>
+<tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=num, or mm/dd/yy)</td></tr>
 <tr><td>Theme:</td><td><input v-model.lazy="chosen_theme"> (white/dark/paper)</td></tr>
 <tr><td>Bare:</td><td> <input v-model.lazy="chosen_bare"> (1 or 0)</td></tr>
 </table>
