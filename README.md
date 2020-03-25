@@ -12,7 +12,9 @@ https://davidbau.github.io/covid-19-chart</a>.
 
 My physician wife wanted to see some summaries of U.S. covid-19
 stats that are not graphed in the press, so I wrote this short HTML
-page to create those rollups.
+page to create those rollups.  I have now packaged it as an API
+so that it can be used to make more customized live graphs and
+embed them in dashboards for local decisionmakers.
 
 This page just one small HTML+JS page, using chartist.js
 (with legend, tooltip, and logaxis extensions), vue.js, lodash.js,
@@ -37,7 +39,9 @@ created by directly using the URL API.
 * `start`: a date or >= expression as in the menu.
 * `top`: integer how how many top states or countries to include.
 * `include`: semicolon-separated list of states or countries to include.
+* `theme`: dark, white, or paper, to match your dashboard.
+* `advanced`: show a simple form for customizing the graph.
 * `bare`: set to 1 to show just the chart (e.g., for embedding).
 
-There is no user interface for the last few options, but the URL can
-be edited directly to customize the chart.
+The URL can be edited directly, or the "Advanced options" link can be
+used to toggle the advanced customzization form.
