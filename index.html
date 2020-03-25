@@ -101,7 +101,9 @@ with highest numbers.</span> Data are from
   </option>
 </select></nobr>
 <p>Click on the legend to toggle a series;
-hover on points for specific numbers.</p>
+hover on points for specific numbers.
+<a href="javascript:" v-on:click="print_page()">Print it.</a>
+</p>
 </div
 ><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"
  :style="chosen_bare == '1' ? { width: '100%', display: 'block' } : null"
@@ -126,16 +128,14 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td colspan=2">
 Bare chart embed code:<br>
 <textarea style="width:220px;height:40px;word-wrap:break-word;word-break:break-all;white-space:pre-wrap" readonly onclick="this.focus();this.select();">
-&lt;iframe width="500" height="388" frameborder="0" src="{{
-siteurl+'#'+$route.fullPath.replace(/bare|advanced=\d*/, '')+'&bare=1'
-}}"></iframe>
+&lt;iframe width="500" height="388" frameborder="0" src="{{ make_url({bare:1}) }}"></iframe>
 </textarea>
 </td></tr>
 </table>
 </div>
 <div v-else>
 <p>For policymakers, the chart can <a :href="'#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed&theme='+chosen_theme">compare exponental growth of coronavirus cases</a>.
-Select the logarithmic totals with a &gt;=100 starting threshold, so that day zero is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and therefore the slopes, will reveal the differences.
+Select the logarithmic totals with a &gt;=100 starting threshold, so that day zero is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and thus the slopes, will reveal the differences.
 
 <p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a :href="'#/?scale=linear&stat=deltas&start=2%2F29%2F20&series=deaths&theme='+chosen_theme">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
 
@@ -659,7 +659,15 @@ var theapp = new Vue({
           this.chosen_scale);
       var xtitle = xaxis_title(this.chosen_start);
       plot_series(shifted_extract, this.chosen_scale, xtitle, ytitle);
-    }
+    },
+    make_url: function(opts) {
+      return this.siteurl + this.$router.resolve({query:opts}).href;
+    },
+    print_page: function() {
+      var printwindow = window.open(this.make_url({bare:1,theme:'white'}));
+      printwindow.onafterprint = function() { printwindow.close() };
+      setTimeout(function() { printwindow.print(); }, 1200);
+    },
   }
 });
 
