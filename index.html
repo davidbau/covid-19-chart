@@ -156,6 +156,17 @@ var csse = null, chart = null;
 // github. They publish three time series: "Confirmed", "Deaths", and
 // "Recovered".  The data in the last category seems inconsistent
 // so is not included in the current graph.
+//
+// Starting on 3/23/20, CSSE changed formats and has (hopefully
+// temporarily) stopped publishing US state-level time series,
+// although global by-country time series are still being produced.
+// The code below merges three data sources to make up for this.
+//   (1) the global file for by-country time series.
+//   (2) the old time-series files for by-state before 3/23
+//   (3) individual by-day files for by-state on 3/23 and after.
+// Every source row becomes its own row, with appropriate columns
+// translated, and we depend on rollup_ts to sum and produce
+// aggregated by-state statistics by adding all the relevant rows.
 //////////////////////////////////////////////////////////////////////
 var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
   "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
