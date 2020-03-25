@@ -76,6 +76,8 @@ span.ct-label.ct-vertical.ct-start {
   User interface, using vue template idioms.
 -->
 <div id="app">
+<link rel="stylesheet"
+ :href="'theme/' + chosen_theme.replace(/[^A-Za-z]/, '') + '.css'">
 <div class="pane-menu"
  :style="{display: chosen_bare == '1' ? 'none' : 'inline-block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
@@ -126,6 +128,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td>Top:</td><td><input v-model.lazy="chosen_top"> (Integer)</td></tr>
 <tr><td>Include:</td><td><input v-model.lazy="chosen_include"> (';' between states)</td></tr>
 <tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=number, or mm/dd/yy)</td></tr>
+<tr><td>Theme:</td><td><input v-model.lazy="chosen_theme"> (white/dark/paper)</td></tr>
 <tr><td>Bare:</td><td> <input v-model.lazy="chosen_bare"> (1 or 0)</td></tr>
 </table>
 </div>
@@ -620,6 +623,7 @@ var theapp = new Vue({
     chosen_start: url_property('start', '>=30'),
     chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
+    chosen_theme: url_property('theme', 'paper'),
     chosen_bare: url_property('bare', '0'),
     chosen_advanced: url_property('advanced', '0'),
   },
