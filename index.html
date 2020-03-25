@@ -30,6 +30,7 @@ chartist = Chartist; jquery = $;
 <link rel="stylesheet" href="lib/select.css">
 <link rel="stylesheet" href="lib/chart.css">
 <style>
+[v-cloak] { display: none }
 body { background: #FFF1E3; color: #333;
   font-family: 'Open Sans', sans-serif; font-size: 10pt; }
 h1 { font-size: 14pt; }
@@ -75,7 +76,7 @@ span.ct-label.ct-vertical.ct-start {
 <!--
   User interface, using vue template idioms.
 -->
-<div id="app">
+<div id="app" v-cloak>
 <link rel="stylesheet"
  :href="'theme/' + chosen_theme.replace(/[^A-Za-z]/, '') + '.css'">
 <div class="pane-menu"
@@ -139,7 +140,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td colspan=2">
 Bare chart embed code:<br>
 <textarea style="width:220px;height:40px;word-wrap:break-word;word-break:break-all;white-space:pre-wrap" readonly onclick="this.focus();this.select();">
-&lt;iframe width="500" height="388" src="{{
+&lt;iframe width="500" height="388" frameborder="0" src="{{
 siteurl+'#'+$route.fullPath.replace(/bare|advanced=\d*/, '')+'&bare=1'
 }}"></iframe>
 </textarea>
