@@ -59,8 +59,8 @@ span.ct-label.ct-vertical.ct-start {
   .ct-point { stroke-width: 5px; }
 }
 @media only screen and (min-width:800px) {
-  .pane-menu { display: inline-block; width: 26%; }
-  .pane-chart { display: inline-block; width: 73%; float: right; }
+  .pane-menu { display: inline-block; width: 27%; }
+  .pane-chart { display: inline-block; width: 72%; float: right; }
   .pane-credit div:first-child p:first-child { margin-top: 0; }
   .ct-line { stroke-width: 3px; }
   .ct-point { stroke-width: 8px; }
@@ -149,6 +149,7 @@ Open source. (MIT license.)
 <script>
 // Globals:
 var csse = null, chart = null;
+var USA_ABBREV = _.invert(USA_STATES);
 
 //////////////////////////////////////////////////////////////////////
 // Data loading.
@@ -308,6 +309,27 @@ function rollup_ts(series, state_filter, country_filter) {
   }
   return [ts_names, totals];
 }
+function rollup_multi_ts(series, key_function) {
+  var names = series[0],
+    state_i = fieldnum(names, 'state'),
+    country_i = fieldnum(names, 'country'),
+    ts_i = first_date_field(names),
+    ts_names = names.slice(ts_i),
+    all_totals = {};
+  for (var row of series.slice(1)) {
+    var keys = key_function(row[state_i], row[country_i]);
+    _.forEach(keys, key => {
+      if (!all_totals.hasOwnProperty(key)) {
+        all_totals[key] = _.fill(Array(ts_names.length), 0);
+      }
+      var sumrow = all_totals[key];
+      for (var i = ts_i; i < names.length; ++i) {
+        sumrow[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
+      }
+    });
+  }
+  return [ts_names, all_totals];
+}
 function norm_ctry(s) {
   if (s == 'Korea, South') return 'S Korea';
   if (s == 'United Kingdom') return 'UK';
@@ -345,6 +367,23 @@ function get_national_data(csse, field, chosen_country) {
          (norm_ctry(country) == chosen_country)) );
   deltas = series_deltas(totals);
   return { dates: dates, totals: totals, deltas: deltas }
+}
+function get_multi_local_data(csse, field, stat, localities) {
+  var requested = _.zipObject(localities, _.fill(Array(localities.length), 1)),
+    requested_state = _.filter(localities, (s) => !!USA_STATES[s]).length > 0;
+  function keys_for_row(state, country) {
+    var keys = [];
+    if (requested[country]) { keys.push(country); }
+    if (requested_state && country == 'US') {
+      var abbrev = (USA_ABBREV[state] || state.match(/[A-Z]{2}$/) || '') + '';
+      if (requested[abbrev]) { keys.push(abbrev); }
+    }
+    return keys;
+  }
+  var dates, rollup;
+  [dates, rollup] = rollup_multi_ts(csse[field], keys_for_row);
+  if (stat == 'deltas') { rollup = _.mapValues(rollup, v => series_deltas(v)); }
+  return { dates: dates, seriesmap: rollup };
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -437,8 +476,9 @@ function extract_data(csse, domain, field, stat, scale, topcount, include) {
   var dates = global_data.dates.slice(first_nz);
   var localities = (domain == 'Intl' ?
       all_countries(csse[field]) : _.keys(USA_STATES));
-  var state_series = _.fromPairs(localities.map(k => [k,
-      get_local_data(csse, field, k)[stat].slice(first_nz)]));
+  var state_series = _.mapValues(
+      get_multi_local_data(csse, field, stat, localities).seriesmap,
+      v => v.slice(first_nz));
   var top_states = _.toPairs(state_series)
       .sort((x, y) => (avg_last3(y[1]) || 0) - (avg_last3(x[1]) || 0)
            ).slice(0, parseInt(topcount));
@@ -558,7 +598,7 @@ var theapp = new Vue({
   },
   computed: {
     start_choices: function() {
-      if (this.csse == null) { return ['1/1/20', '>=30', '>=100']; }
+      if (this.csse == null) { return ['1/1/20', '>=30', '>=1000']; }
       var extract = this.extracted_data;
       var choices = available_start_rules(extract);
       if (this.chosen_start && choices.indexOf(this.chosen_start) < 0) {
