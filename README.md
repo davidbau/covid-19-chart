@@ -1,5 +1,5 @@
-COVID-19 Time Series Chart
-==========================
+COVID-19 Live Time Series Chart
+===============================
 
 Data are pulled directly from
 <a href="https://github.com/CSSEGISandData/COVID-19">Johns Hopkins CSSE</a>
@@ -7,8 +7,8 @@ into an interactive chart with both log and linear options,
 breakouts by state, and graphs of changes from day to day of
 reported deaths and confirmed cases.
 
-<a href="https://davidbau.github.io/covid-19-chart">See the chart at
-https://davidbau.github.io/covid-19-chart</a>.
+<a href="https://covid19chart.org">See the live chart at
+covid19chart.org</a>.
 
 My physician wife wanted to see some summaries of U.S. covid-19
 stats that are not graphed in the press, so I wrote this short HTML
