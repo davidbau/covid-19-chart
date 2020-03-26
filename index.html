@@ -5,6 +5,7 @@ Simple COVID-19 charting code, single-page HTML javascript.
 <html>
 <head>
 <title>COVID-19 Live Chart</title>
+<!-- SEO metadata -->
 <meta name="description" content="Interactive chart of coronavirus cases over time.">
 <meta property="og:url" content="https://covid19chart.org/">
 <meta property="og:title" content="COVID-19 Live Chart" />
@@ -27,18 +28,21 @@ chartist = Chartist; jquery = $;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-axistitle@0.0.7/dist/chartist-plugin-axistitle.min.js" integrity="sha256-prApUlf6GL5TScu+1fzXL6UDmTFLl9v2Bsk57h4zlK8=" crossorigin="anonymous"></script>
-<script src="lib/chartist-plugin-pointlabels.js"></script>
+<!--
+  Customized dependencies.
+-->
+<script src="lib/chartist-plugin-pointlabels.js"></script> <!-- single label -->
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
-<script src="lib/chartist-print.js"></script>
-<script src="lib/usa_states.js"></script>
-<link rel="stylesheet" href="lib/select.css">
-<link rel="stylesheet" href="lib/custom-chart.css">
+<script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
+<script src="lib/usa_states.js"></script> <!-- translating abbreviations -->
+<link rel="stylesheet" href="lib/select.css"> <!-- mobile friendly select -->
+<link rel="stylesheet" href="lib/custom-chart.css"> <!-- colors etc -->
 <style>
 [v-cloak] { display: none }
 body { background: #FFF1E3; color: #333;
   font-family: 'Open Sans', sans-serif; font-size: 10pt; }
-h1 { font-size: 14pt; }
+h1 { font-size: 14pt; margin-top: 8px; }
 .buttonrow { text-align: center; }
 select { margin-top: 1px; margin-bottom: 1px; }
 @media only screen and (max-width:799px) {
@@ -152,9 +156,17 @@ Open source.
 (<a href="https://en.wikipedia.org/wiki/MIT_License">MIT license</a>.)
 <address>- <a href="http://davidbau.com/">David Bau</a></address>
 </div></div></body>
+<!--
+  Data loading and user interface code.  Main entrypoint at the end.
+-->
 <script>
-// Globals:
-var csse = null, chart = null;
+//////////////////////////////////////////////////////////////////////
+// Globals - exposing these globals is useful for debugging.
+//////////////////////////////////////////////////////////////////////
+var csse = null,   // Cleaned view of the data source, plain data.
+    chart = null,  // The main object, Chartist object.
+    theapp = null; // Main application controller, Vue object.
+
 var USA_ABBREV = _.invert(USA_STATES);
 
 //////////////////////////////////////////////////////////////////////
@@ -601,7 +613,7 @@ function plot_series(extract, scale, xaxis, yaxis) {
 // The vue.js app is used to manage the user's selection of different
 // options.
 //////////////////////////////////////////////////////////////////////
-var theapp = new Vue({
+theapp = new Vue({
   el: '#app',
   router: new VueRouter(),
   data: {
