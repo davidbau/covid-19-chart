@@ -72,8 +72,8 @@ select { margin-top: 1px; margin-bottom: 1px; }
 <div class="pane-menu"
  :style="{display: chosen_bare == '1' ? 'none' : 'inline-block'}">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
-COVID-19 <nobr>Live Chart <span v-if="chosen_advanced == '1'">API</a>
-<a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:middle"></a></nobr></h1>
+COVID-19 <nobr>Live Chart <span v-if="chosen_advanced == '1'">API</span>
+<a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:bottom;margin-bottom:2px;"></a></nobr></h1>
 <p><span v-if="parseInt(chosen_top) > 0">Stats on {{ chosen_top }}
 {{ { US: 'states', Intl: 'countries outside China'}[chosen_domain] }}
 with highest numbers.</span> Data are from
@@ -104,9 +104,9 @@ with highest numbers.</span> Data are from
     {{ option }}
   </option>
 </select></nobr>
-<p>Click on the legend to toggle a series;
-hover on points for specific numbers.
-<a href="javascript:" v-on:click="print_page()">Print it.</a>
+<p>Click on the legend to toggle a series.
+Hover on points for specific numbers.
+<a href="javascript:" v-on:click="print_page()">Print the chart.</a>
 </p>
 </div
 ><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"
@@ -149,7 +149,7 @@ Select the logarithmic totals with a &gt;=100 starting threshold, so that day ze
 </div>
 
 <p><a href="javascript:" v-on:click="chosen_advanced = 1 - chosen_advanced"
-><b>{{ chosen_advanced == 1 ? 'Close' : 'Open' }} advanced mode</b></a>.
+>&#x2b95;{{ chosen_advanced == 1 ? 'Close' : 'Open' }} advanced mode</a>.
 <a href="http://davidbau.com/archives/2020/03/25/covid19_chart_api.html">Blog post.</a>
 <a href="https://github.com/davidbau/covid-19-chart">Code on github</a>.
 Open source.
