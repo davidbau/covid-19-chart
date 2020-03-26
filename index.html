@@ -318,7 +318,7 @@ function add_day(data, singleday, date, columnname) {
 // applies a rule for consolidating U.S. state data that is coded
 // as either "County Name, ST' or "State Name".
 //////////////////////////////////////////////////////////////////////
-function rollup_ts(series, state_filter, country_filter) {
+function rollup_ts(series, country_state_filter) {
   var names = series[0],
     state_i = fieldnum(names, 'state'),
     country_i = fieldnum(names, 'country'),
@@ -326,10 +326,7 @@ function rollup_ts(series, state_filter, country_filter) {
     ts_names = names.slice(ts_i),
     totals = _.fill(Array(ts_names.length), 0);
   for (var row of series.slice(1)) {
-    if (state_filter && !state_filter(row[state_i]) ||
-        country_filter &&  !country_filter(row[country_i])) {
-      continue;
-    }
+    if (!country_state_filter(row[country_i], row[state_i])) { continue; }
     for (var i = ts_i; i < names.length; ++i) {
       totals[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
     }
@@ -344,7 +341,7 @@ function rollup_multi_ts(series, key_function) {
     ts_names = names.slice(ts_i),
     all_totals = {};
   for (var row of series.slice(1)) {
-    var keys = key_function(row[state_i], row[country_i]);
+    var keys = key_function(row[country_i], row[state_i]);
     _.forEach(keys, key => {
       if (!all_totals.hasOwnProperty(key)) {
         all_totals[key] = _.fill(Array(ts_names.length), 0);
@@ -378,18 +375,19 @@ function get_local_data(csse, field, locality) {
 function get_state_data(csse, field, chosen_abbrev) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
-    state => { return !chosen_abbrev ||
-       state.endsWith(chosen_abbrev) ||
-       state == USA_STATES[chosen_abbrev] },
-    country => { return country == 'US' });
+    (country, state) => { return country == 'US' &&
+       (!chosen_abbrev ||
+         state == USA_STATES[chosen_abbrev] ||
+         state.replace(' (From Diamond Princess)', '')
+           .endsWith(chosen_abbrev))
+  });
   deltas = series_deltas(totals);
   return { dates: dates, totals: totals, deltas: deltas }
 }
 function get_national_data(csse, field, chosen_country) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
-    null,
-    country =>
+    (country, state) =>
         (!chosen_country && (country != 'China') ||
          (norm_ctry(country) == chosen_country)) );
   deltas = series_deltas(totals);
@@ -398,7 +396,7 @@ function get_national_data(csse, field, chosen_country) {
 function get_multi_local_data(csse, field, stat, localities) {
   var requested = _.zipObject(localities, _.fill(Array(localities.length), 1)),
     requested_state = _.filter(localities, (s) => !!USA_STATES[s]).length > 0;
-  function keys_for_row(state, country) {
+  function keys_for_row(country, state) {
     var keys = [];
     if (requested[country]) { keys.push(country); }
     if (requested_state && country == 'US') {
