@@ -35,6 +35,8 @@ chartist = Chartist; jquery = $;
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
+<script src="lib/load_csse.js"></script> <!-- JHU CSSE loader -->
+<script src="lib/utils.js"></script> <!-- Date and csv utilities -->
 <script src="lib/usa_states.js"></script> <!-- translating abbreviations -->
 <link rel="stylesheet" href="lib/select.css"> <!-- mobile friendly select -->
 <link rel="stylesheet" href="lib/custom-chart.css"> <!-- colors etc -->
@@ -163,7 +165,7 @@ Open source.
 //////////////////////////////////////////////////////////////////////
 // Globals - exposing these globals is useful for debugging.
 //////////////////////////////////////////////////////////////////////
-var csse = null,   // Cleaned view of the data source, plain data.
+var csse = null,   // Cleaned data loaded from csse.
     chart = null,  // The main object, Chartist object.
     theapp = null; // Main application controller, Vue object.
 
@@ -695,15 +697,6 @@ function series_deltas(series) {
     deltas[i] = series[i] - series[i - 1];
   }
   return deltas;
-}
-function parse_date(name) {
-  return /^(\d{1,2})\/(\d{1,2})\/(?:20)?(\d{2})$/.exec(name);
-}
-function fieldnum(names, pat) {
-  return names.findIndex(n => RegExp(pat, 'i').exec(n))
-}
-function first_date_field(names) {
-  return names.findIndex(n => !!parse_date(n));
 }
 function url_property(name, default_value, nav) {
   return {
