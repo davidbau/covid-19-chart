@@ -177,6 +177,8 @@ var USA_ABBREV = _.invert(USA_STATES);
 //////////////////////////////////////////////////////////////////////
 var ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
   "/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/";
+var old_ts_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
+  "/COVID-19/master/archived_data/archived_time_series/";
 var daily_base_url = "https://raw.githubusercontent.com/CSSEGISandData" +
   "/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/";
 
@@ -185,7 +187,8 @@ function ts_url(seriesname, domain) {
        + "_" + domain + ".csv";
 }
 function old_ts_url(seriesname) {
-  return ts_base_url + "time_series_19-covid-" + seriesname + '.csv';
+  return old_ts_base_url + "time_series_19-covid-" + seriesname
+        + '_archived_0325.csv';
 }
 function daily_url(date) {
   return daily_base_url + date + '.csv';
