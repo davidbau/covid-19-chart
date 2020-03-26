@@ -383,8 +383,7 @@ function get_state_data(csse, field, chosen_abbrev) {
          state.replace(' (From Diamond Princess)', '')
            .endsWith(chosen_abbrev))
   });
-  deltas = series_deltas(totals);
-  return { dates: dates, totals: totals, deltas: deltas }
+  return { dates: dates, totals: totals }
 }
 function get_national_data(csse, field, chosen_country) {
   var dates, totals, deltas;
@@ -392,10 +391,9 @@ function get_national_data(csse, field, chosen_country) {
     (country, state) =>
         (!chosen_country && (country != 'China') ||
          (norm_ctry(country) == chosen_country)) );
-  deltas = series_deltas(totals);
-  return { dates: dates, totals: totals, deltas: deltas }
+  return { dates: dates, totals: totals }
 }
-function get_multi_local_data(csse, field, stat, localities) {
+function get_multi_local_data(csse, field, localities) {
   var requested = _.zipObject(localities, _.fill(Array(localities.length), 1)),
     requested_state = _.filter(localities, (s) => !!USA_STATES[s]).length > 0;
   function keys_for_row(country, state) {
@@ -409,7 +407,6 @@ function get_multi_local_data(csse, field, stat, localities) {
   }
   var dates, rollup;
   [dates, rollup] = rollup_multi_ts(csse[field], keys_for_row);
-  if (stat == 'deltas') { rollup = _.mapValues(rollup, v => series_deltas(v)); }
   return { dates: dates, seriesmap: rollup };
 }
 
@@ -489,35 +486,31 @@ function apply_start_rule(start, extracted) {
 // of time series data, by state abbreviation.  Ten states
 // are included, based on the highest numbers on the last day.
 //////////////////////////////////////////////////////////////////////
-function extract_data(csse, domain, field, stat, scale, topcount, include) {
+function extract_data(csse, domain, field, stat, topcount, include) {
   if (!csse) return { labels: [], dates: [] };
   domain = domain || 'US';
   field = field || 'confirmed';
   stat = stat || 'totals';
-  scale = scale || 'log10';
   topcount = topcount || 10;
   var get_global_data = domain == 'Intl' ?  get_national_data : get_state_data;
   var global_data = get_global_data(csse, field);
   var first_nz = _.findIndex(global_data.totals, i => i > 0);
-  var global_series = global_data[stat].slice(first_nz);
+  var global_series = global_data.totals.slice(first_nz);
   var dates = global_data.dates.slice(first_nz);
   var localities = (domain == 'Intl' ?
       all_countries(csse[field]) : _.keys(USA_STATES));
   var state_series = _.mapValues(
-      get_multi_local_data(csse, field, stat, localities).seriesmap,
+      get_multi_local_data(csse, field, localities).seriesmap,
       v => v.slice(first_nz));
   var top_states = _.toPairs(state_series)
-      .sort((x, y) => (avg_last3(y[1]) || 0) - (avg_last3(x[1]) || 0)
+      .sort((x, y) => (score_series(stat, y[1])) - (score_series(stat, x[1]))
            ).slice(0, parseInt(topcount));
   var included = _.fromPairs(top_states);
   for (var inc of include.split(';')) {
     if (inc && !included.hasOwnProperty(inc)) {
-      var extra = get_local_data(csse, field, inc)[stat].slice(first_nz);
+      var extra = get_local_data(csse, field, inc).totals.slice(first_nz);
       top_states.push([inc, extra])
     }
-  }
-  if (/log/.exec(scale)) {
-    top_states = _.map(top_states, p => [p[0], p[1].map(x => x>0 ? x : null)]);
   }
   if (domain != 'Intl') { top_states.unshift([domain, global_series]); }
   var described_series = top_states.map(p => [p[0], p[1].map((x, i) =>
@@ -546,11 +539,18 @@ function xaxis_title(field, start) {
 // The extract data is plotted using chartist.js,
 // using the given scale.
 //////////////////////////////////////////////////////////////////////
-function plot_series(extract, scale, xaxis, yaxis) {
+function plot_series(extract, stat, scale, xaxis, yaxis) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
+  if (stat == 'deltas') {
+    extract.series = _.map(extract.series, p => [p[0], _.map(p[1], (d, i) => {
+      if (i == 0) { return _.defaults({value: 0}, d); }
+      var cur = (d ? d.value : 0),
+          prev = (p[1][i-1] ? p[1][i-1].value : 0);
+      return _.defaults({value: cur - prev}, d);
+    })]);
+  }
   if (scale.startsWith('log')) {
-    // null out all non-positive entries.
     extract.series = _.map(extract.series, p => [p[0], _.map(p[1], d => {
       return d && d.value && d.value > 0 ? d : null;
     })]);
@@ -645,7 +645,7 @@ theapp = new Vue({
     },
     extracted_data: function() {
       return extract_data(this.csse, this.chosen_domain,
-          this.chosen_series, this.chosen_stat, this.chosen_scale,
+          this.chosen_series, this.chosen_stat,
           this.chosen_top, this.chosen_include);
     },
     chosen_domain: url_property('domain', 'US'),
@@ -662,6 +662,7 @@ theapp = new Vue({
   watch: {
     extracted_data: function(val) { this.draw_chart(); },
     chosen_start: function(val) { this.draw_chart(); },
+    chosen_scale: function(val) { this.draw_chart(); },
   },
   methods: {
     draw_chart: function() {
@@ -674,7 +675,8 @@ theapp = new Vue({
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale);
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
-      plot_series(shifted_extract, this.chosen_scale, xtitle, ytitle);
+      plot_series(shifted_extract, this.chosen_stat, this.chosen_scale,
+          xtitle, ytitle);
     },
     make_url: function(opts) {
       return this.siteurl + this.$router.resolve(
@@ -691,14 +693,6 @@ theapp = new Vue({
 //////////////////////////////////////////////////////////////////////
 // Utility functions.
 //////////////////////////////////////////////////////////////////////
-function series_deltas(series) {
-  var deltas = _.fill(Array(series.length), 0);
-  deltas[0] = series[0];
-  for (var i = 1; i < series.length; ++i) {
-    deltas[i] = series[i] - series[i - 1];
-  }
-  return deltas;
-}
 function url_property(name, default_value, nav) {
   return {
     get() { return this.$route.query[name] || default_value },
@@ -706,8 +700,13 @@ function url_property(name, default_value, nav) {
       { [name]: value }, this.$route.query) }).catch(err => {}); }
   };
 }
-function avg_last3(s) {
-  return _.sum(s.slice(-3)) / (1e-10 + s.slice(-3).length);
+function score_series(stat, s) {
+  if (stat == 'deltas') {
+    var last = _.map(s.slice(-3), d => parseInt(d || 0) || 0);
+    return _.max(last) - _.min(last);
+  } else {
+    return _.sum(s.slice(-3)) / (1e-10 + s.slice(-3).length);
+  }
 }
 
 //////////////////////////////////////////////////////////////////////
