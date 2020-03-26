@@ -649,7 +649,7 @@ theapp = new Vue({
     chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
     chosen_theme: url_property('theme', 'paper'),
-    chosen_bare: url_property('bare', '0'),
+    chosen_bare: url_property('bare', '0', true),
     chosen_advanced: url_property('advanced', '0'),
   },
   watch: {
@@ -707,10 +707,10 @@ function fieldnum(names, pat) {
 function first_date_field(names) {
   return names.findIndex(n => !!parse_date(n));
 }
-function url_property(name, default_value) {
+function url_property(name, default_value, nav) {
   return {
     get() { return this.$route.query[name] || default_value },
-    set(value) { this.$router.replace({query: _.defaults(
+    set(value) { this.$router[nav ? 'push' : 'replace']({query: _.defaults(
       { [name]: value }, this.$route.query) }).catch(err => {}); }
   };
 }
