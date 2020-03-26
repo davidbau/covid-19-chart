@@ -516,7 +516,7 @@ function extract_data(csse, domain, field, stat, scale, topcount, include) {
   };
 }
 function yaxis_title(field, stat, scale) {
-  var desc = {totals: 'Total cumulative ', delta: 'Daily new '}[stat] +
+  var desc = {totals: 'Total cumulative ', deltas: 'Daily new '}[stat] +
              {confirmed: 'confirmed cases', deaths: 'deaths'}[field] +
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
