@@ -684,7 +684,7 @@ function series_deltas(series) {
   return deltas;
 }
 function parse_date(name) {
-  return /^(\d{1,2})\/(\d{1,2})\/(?:20)?(\d{2})2?$/.exec(name);
+  return /^(\d{1,2})\/(\d{1,2})\/(?:20)?(\d{2})$/.exec(name);
 }
 function fieldnum(names, pat) {
   return names.findIndex(n => RegExp(pat, 'i').exec(n))
