@@ -533,9 +533,10 @@ function yaxis_title(field, stat, scale) {
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
 }
-function xaxis_title(start) {
+function xaxis_title(field, start) {
   if (start.startsWith('>=')) {
-     return 'Days since ' + start.slice(2) + 'th case';
+     return 'Days since ' + start.slice(2) + 'th ' +
+         {confirmed: 'case', deaths: 'death'}[field];
   }
   return '';
 }
@@ -672,7 +673,7 @@ theapp = new Vue({
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale);
-      var xtitle = xaxis_title(this.chosen_start);
+      var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
       plot_series(shifted_extract, this.chosen_scale, xtitle, ytitle);
     },
     make_url: function(opts) {
