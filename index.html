@@ -97,7 +97,7 @@ with highest numbers.</span> Data are from
   </option>
 </select>
 <nobr><select v-model="chosen_scale" class="select-css">
-  <option v-for="option in chosen_stat == 'deltas' ? ['linear'] : scale_choices" v-bind:value="option">
+  <option v-for="option in scale_choices" v-bind:value="option">
     {{ option }}
   </option>
 </select>
@@ -549,6 +549,12 @@ function xaxis_title(field, start) {
 function plot_series(extract, scale, xaxis, yaxis) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
+  if (scale.startsWith('log')) {
+    // null out all non-positive entries.
+    extract.series = _.map(extract.series, p => [p[0], _.map(p[1], d => {
+      return d && d.value && d.value > 0 ? d : null;
+    })]);
+  }
   chart = new Chartist.Line('#chart', {
     labels: extract.labels.map(x => {
       if (!x) return x;
@@ -656,12 +662,6 @@ theapp = new Vue({
   watch: {
     extracted_data: function(val) { this.draw_chart(); },
     chosen_start: function(val) { this.draw_chart(); },
-    chosen_stat: function(val) {
-      if (val == 'deltas' && this.chosen_scale == 'log10') {
-        this.chosen_scale = 'linear';
-      }
-      this.draw_chart();
-    },
   },
   methods: {
     draw_chart: function() {
