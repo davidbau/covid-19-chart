@@ -1,11 +1,11 @@
 <!doctype html>
 <html>
 <head>
-<title>COVID-19 Live Chart</title>
+<title>COVID-19 Chart Maker</title>
 <meta name="description"
  content="Interactive chart of coronavirus cases over time.">
 <meta property="og:url" content="https://covid19chart.org/">
-<meta property="og:title" content="COVID-19 Live Chart" />
+<meta property="og:title" content="COVID-19 Chart Maker" />
 <meta property="og:description"
  content="Interactive chart of coronavirus cases over time." />
 <meta property="og:image"
@@ -100,7 +100,8 @@ select { margin-top: 1px; margin-bottom: 1px; }
  :href="'theme/' + chosen_theme.replace(/[^A-Za-z]/, '') + '.css'">
 <form class="pane-menu" autocomplete="none">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
-COVID-19 <nobr>Live Chart <span v-if="chosen_advanced == '1'">API</span>
+COVID-19 <nobr>Chart <span v-if="chosen_advanced == '1'">API</span
+><span v-else>Maker</span>
 <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:bottom;margin-bottom:2px;"></a></nobr></h1>
 <p><span v-if="parseInt(chosen_top) > 0">Stats on {{ chosen_top }}
 {{ { US: 'states', Intl: 'countries outside China'}[chosen_domain] }}
@@ -178,7 +179,7 @@ Select the logarithmic totals with a &gt;=100 starting threshold, so that day ze
 
 <p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a :href="'#/?scale=linear&stat=deltas&start=2%2F29%2F20&series=deaths&theme='+chosen_theme">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
 
-<p>The graph automatically updates every day based on current data. Please share. And please isolate.
+<p>The graph you make will automatically update every day based on current data. Please share. And please isolate.
 
 <p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>, which reveals policy differences internationally.  It is an easy-to-modify HTML page (using chartist.js, vue.js, lodash.js); pull requests are welcome.
 </div>
