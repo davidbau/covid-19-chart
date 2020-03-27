@@ -14,6 +14,7 @@
 <!--
    Library dependencies, loaded from various CDNs.
  -->
+<link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.js" integrity="sha256-iAuxnf8Cwr0yrQkpf6oQG4PaL/oVmoer6V/RfX2KQws=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
@@ -21,7 +22,11 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.min.css" integrity="sha256-seGyqLj5T52Hx8W7/YTajtNXGXQf+IksfkcaKGoTkbY=" crossorigin="anonymous" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js" integrity="sha256-ngFW3UnAN0Tnm76mDuu7uUtYEcG3G5H1+zioJw3t+68=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.1.3/vue-router.min.js" integrity="sha256-r/vPIUvTobCpYZsMmvU7HM58cNd4D6/vdICqDFapV7Y=" crossorigin="anonymous"></script>
-<link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
+<script>// process variable is needed by simple-suggest.
+process = null;
+</script>
+<script src="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/iife.js" integrity="sha256-06eSh+iu/R5lRkwjJYl1Kddxg3EFmK4F2b9dWrVYEi4=" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/styles.css">
 <script>// Tooltip plugin needs these lowercased globals, oddly enough.
 chartist = Chartist; jquery = $;
 </script>
@@ -48,10 +53,19 @@ body { background: #FFF1E3; color: #333;
   font-family: 'Open Sans', sans-serif; font-size: 10pt; }
 h1 { font-size: 14pt; margin-top: 8px; }
 .buttonrow { text-align: center; }
+#app .vue-simple-suggest.designed .input-wrapper input {
+  margin: 2px 0;
+  padding: 2px 8px;
+  font-size: 10pt;
+}
+#app .vue-simple-suggest {
+  text-align: left;
+}
 select { margin-top: 1px; margin-bottom: 1px; }
 @media only screen and (max-width:799px) {
   .ct-line { stroke-width: 2px; }
   .ct-point { stroke-width: 5px; }
+  .pane-chart { z-index: -1; }
 }
 @media only screen and (min-width:800px) {
   .pane-menu { display: inline-block; width: 27%; }
@@ -64,17 +78,19 @@ select { margin-top: 1px; margin-bottom: 1px; }
   .pane-chart { width: 100% }
   body { background: none; }
 }
+.bare .pane-menu { display: none; }
+.bare .pane-credit { display: none; }
+.bare .pane-chart { width: 100% }
 </style>
 </head>
 <body>
 <!--
   User interface, using vue template idioms.
 -->
-<div id="app" v-cloak>
+<div id="app" v-cloak :class="chosen_bare == '1' ? ['bare'] : []">
 <link rel="stylesheet"
  :href="'theme/' + chosen_theme.replace(/[^A-Za-z]/, '') + '.css'">
-<div class="pane-menu"
- :style="{display: chosen_bare == '1' ? 'none' : 'inline-block'}">
+<form class="pane-menu" autocomplete="none">
 <h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
 COVID-19 <nobr>Live Chart <span v-if="chosen_advanced == '1'">API</span>
 <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:bottom;margin-bottom:2px;"></a></nobr></h1>
@@ -85,7 +101,7 @@ with highest numbers.</span> Data are from
 href="https://coronadatascraper.com/">coronadatascraper.com</a>
 <a v-else
 href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
-<p class="buttonrow">
+<div style="text-align:center" class="buttonrow">
 <select v-model="chosen_domain" class="select-css">
   <option v-for="option in domain_choices" v-bind:value="option">
     {{ option }}
@@ -111,16 +127,17 @@ href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
     {{ option }}
   </option>
 </select></nobr>
+<vue-simple-suggest :list="available_localities" placeholder="Find a different county, state, or country"
+:filter-by-query="true" v-model="added_locality"
+@select="add_locality()"></vue-simple-suggest>
+</div>
 <p>Click on the legend to toggle a series.
 Hover on points for specific numbers.
 <a href="javascript:" v-on:click="print_page()">Print the chart.</a>
 </p>
-</div
-><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"
- :style="chosen_bare == '1' ? { width: '100%', display: 'block' } : null"
-></div
-><div class="pane-credit"
- :style="{display: chosen_bare == '1' ? 'none' : 'block'}">
+</form
+><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
+><div class="pane-credit">
 <div v-if="chosen_advanced == '1'">
 <p>
 Customized charts are directly linkable by URL.  URL parameters can be edited directly, or in the form below.  To plot a custom set of states or countries, use the "include" field; to omit the top 10, reduce the "top" field to zero.  Make bare plots for embedding with "bare=1".
@@ -356,7 +373,7 @@ function apply_start_rule(start, extracted) {
   if (start.startsWith('>=')) {
     var min_v = parseInt(start.slice(2));
     function shift_series(s, min) {
-      var first_i = _.findIndex(s, x => x !== null && x.value >= min);
+      var first_i = _.findIndex(s, x => x != null && x.value >= min);
       if (first_i >= 0) {
         return s.slice(first_i);
       } else {
@@ -365,7 +382,9 @@ function apply_start_rule(start, extracted) {
     }
     data_series.forEach(p => {
       var lastPoint = _.last(p[1]);
-      lastPoint.pointLabel = lastPoint.meta.replace(/ \d+\/\d+\/\d+$/, '');
+      if (lastPoint) {
+        lastPoint.pointLabel = lastPoint.meta.replace(/ \d+\/\d+\/\d+$/, '');
+      }
     });
     data_series = data_series.map(x => [x[0], shift_series(x[1], min_v)]);
     data_series = data_series.filter(x => !!x[1]);
@@ -399,7 +418,7 @@ function extract_data(csse, domain, field, stat, topcount, include) {
   domain = domain || 'US';
   field = field || 'confirmed';
   stat = stat || 'totals';
-  topcount = topcount || 10;
+  topcount = topcount == null ? 10 : topcount;
   var get_global_data = domain == 'Intl' ?  get_national_data : get_state_data;
   var global_data = get_global_data(csse, field);
   var first_nz = _.findIndex(global_data.totals, i => i > 0);
@@ -533,12 +552,17 @@ theapp = new Vue({
   router: new VueRouter(),
   data: {
     csse: null,
+    available_localities: null,
     data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
     domain_choices: ['US', 'Intl'],
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
+    added_locality: null,
+  },
+  updated: function() {
+    $('input').attr('autocomplete', 'none');
   },
   computed: {
     start_choices: function() {
@@ -596,8 +620,46 @@ theapp = new Vue({
       printwindow.onafterprint = function() { printwindow.close() };
       setTimeout(function() { printwindow.print(); }, 1200);
     },
+    add_locality: function() {
+      var app = this;
+      setTimeout(function() {
+        if (app.added_locality && (app.chosen_include || ''
+             ).split(';').indexOf(app.added_locality) < 0) {
+          if (!app.chosen_include) {
+            app.chosen_top = '0';
+            app.chosen_include = app.added_locality;
+          } else {
+            app.chosen_include = app.chosen_include + ';' + app.added_locality;
+          }
+          app.draw_chart();
+        }
+        app.added_locality = '';
+      }, 200);
+    },
   }
 });
+
+//////////////////////////////////////////////////////////////////////
+// Autocomplete list.
+//////////////////////////////////////////////////////////////////////
+function all_localities(csse) {
+  if (csse == null) { return []; }
+  var ext = csse['confirmed'],
+    names = ext[0],
+    localities = _.clone(USA_STATES),
+    admin_i = fieldnum(names, 'admin'),
+    state_i = fieldnum(names, 'state'),
+    country_i = fieldnum(names, 'country');
+  _.forEach(ext.slice(1), r => {
+    if (r[country_i]) {
+      localities[norm_ctry(r[country_i])] = 1;
+      if (r[country_i] == 'US' && r[admin_i] && r[state_i]) {
+        localities[r[admin_i] + ', ' + USA_ABBREV[r[state_i]]] = 1;
+      }
+    }
+  });
+  return _.keys(localities);
+}
 
 //////////////////////////////////////////////////////////////////////
 // Utility functions.
@@ -627,6 +689,7 @@ load_feed_data = (data_feed_name == 'cds' ? load_cds_data : load_csse_data);
 load_feed_data((d) => {
   csse = d;
   theapp.csse = d;
+  theapp.available_localities = all_localities(d);
   theapp.draw_chart();
 });
 
