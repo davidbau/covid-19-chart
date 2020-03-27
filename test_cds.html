@@ -1,0 +1,21 @@
+<html>
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
+<script src="/lib/load_cds.js"></script>
+<script src="/lib/utils.js"></script>
+<script src="/lib/countries.js"></script>
+<script src="/lib/fips_counties.js"></script>
+</head>
+<body>
+<pre>
+</pre>
+<script>
+var cds = null;
+load_cds_data((d) => {
+  cds = d;
+  // document.querySelector('pre').innerText = JSON.stringify(d, null, 1);
+  document.querySelector('pre').innerText = 'use the console to see cds var.';
+});
+</script>
+
