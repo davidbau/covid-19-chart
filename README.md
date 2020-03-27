@@ -48,3 +48,9 @@ created by directly using the URL API.
 The URL can be edited directly, or the "Advanced options" link can be
 used to toggle the advanced customzization form.   More information in
 this <a href="http://davidbau.com/archives/2020/03/25/covid19_chart_api.html">blog post</a>.
+
+Acknowledgements
+----------------
+Thanks to <a href="http://blog.davidebbo.com/about/">David Ebbo</a> for improving the selection UI!
+
+Thanks to the support of <a href="https://quest.mit.edu/">MIT Quest</a>.

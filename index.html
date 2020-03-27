@@ -545,7 +545,11 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
       }),
       // Must be last to not intefere with axis titles.
       Chartist.plugins.legend({
-        legendNames: extract.series.map(x => x[0])
+        legendNames: extract.series.map(x => x[0]),
+        legendState: theapp.legendStates[theapp.chosen_domain],
+        onClick: function(chart, e, legends) {
+          theapp.legendStates[theapp.chosen_domain] = legends;
+        }
       }),
       Chartist.plugins.ctPointLabels({
         textAnchor: 'middle'
@@ -574,6 +578,7 @@ theapp = new Vue({
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
     added_locality: null,
+    legendStates: []    // Legend state is saved separately for each domain
   },
   updated: function() {
     $('input').attr('autocomplete', 'none');
