@@ -203,11 +203,9 @@ function rollup_ts(series, country_state_filter) {
     if (!country_state_filter(row[country_i], row[state_i])) { continue; }
     var agg = aggregate_level(row, aggregate_i, state_i, county_i, city_i);
     if (!cur_agg || agg < cur_agg) {
-      console.log('Setting aggregation level to ' + agg, row);
        _.fill(totals, 0); cur_agg = agg;
     }
     if (agg != cur_agg) { continue; }
-    console.log('adding', row);
     for (var i = ts_i; i < names.length; ++i) {
       totals[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
     }
@@ -266,7 +264,7 @@ function get_state_data(csse, field, chosen_abbrev) {
   var dates, totals, deltas;
   [dates, totals] = rollup_ts(csse[field],
     (country, state) => { return country == 'US' &&
-       (!chosen_abbrev ||
+       state && (!chosen_abbrev ||
          state == USA_STATES[chosen_abbrev] ||
          state.replace(' (From Diamond Princess)', '')
            .endsWith(chosen_abbrev))
