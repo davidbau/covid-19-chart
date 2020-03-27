@@ -1,13 +1,28 @@
 #!/usr/bin/env python
-import re
+import re, json
 
 with open('src/wikifips.html') as f:
   lines = [line.strip() for line in f.readlines()]
+with open('usa_state_list.js') as f:
+  slt = re.sub(r'(?ms).*(\{.*\}).*', r'\1', f.read())
+  states = json.loads(slt)
+state_abbrev = {v.decode(): k.decode() for k, v in states.items()}
+
+def normalize_state(state):
+  if 'Virgin Islands' in state:
+    state = 'Virgin Islands'
+  return state_abbrev[state]
+
+def normalize_name(name):
+   name = name.replace('&#39;', "\\'")
+   name = name.replace('\u2013', '-')
+   return name
 
 # Chop out the table of interest.
 lines = lines[lines.index('</th></tr>'):]
 lines = lines[:lines.index('</td></tr></tbody></table>')]
 
+  
 # An example row:
 # 
 # <tr>
@@ -24,8 +39,12 @@ for line in lines:
     js.append(" '%s': " % line[-5:])
   elif re.match(r'^<td><a href', line):
     m = re.match(r'^<td><a [^>]*title="([^"]*)">', line)
-    js.append("'%s',\n" % m.group(1).replace('&#39;', "\\'"))
+    if ', ' not in m.group(1):
+      js.append("'%s',\n" % normalize_name(m.group(1)))
+    else:
+      name, state = m.group(1).split(', ')
+      state = normalize_state(state)
+      js.append("'%s, %s',\n" % (normalize_name(name).decode('utf-8'), state))
 js.append("};\n")
 with open('usa_counties.js', 'w') as f:
-  f.write(''.join(js))
-
+  f.write(''.join(js).encode('utf-8'))
