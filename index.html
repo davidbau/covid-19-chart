@@ -22,13 +22,13 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chartist/0.11.4/chartist.min.css" integrity="sha256-seGyqLj5T52Hx8W7/YTajtNXGXQf+IksfkcaKGoTkbY=" crossorigin="anonymous" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js" integrity="sha256-ngFW3UnAN0Tnm76mDuu7uUtYEcG3G5H1+zioJw3t+68=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.1.3/vue-router.min.js" integrity="sha256-r/vPIUvTobCpYZsMmvU7HM58cNd4D6/vdICqDFapV7Y=" crossorigin="anonymous"></script>
-<script>// process variable is needed by simple-suggest.
-process = null;
+<script>
+process = null; // process variable is needed by simple-suggest.
+chartist = Chartist; jquery = $; // Tooltip plugin needs these.
 </script>
 <script src="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/iife.js" integrity="sha256-06eSh+iu/R5lRkwjJYl1Kddxg3EFmK4F2b9dWrVYEi4=" crossorigin="anonymous"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/styles.css">
-<script>// Tooltip plugin needs these lowercased globals, oddly enough.
-chartist = Chartist; jquery = $;
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/styles.css" integrity="sha256-50OeaRwCtPG/05g4KvaNeZZQEU95DqVIuqAZTx+GXHA=" crossorigin="anonymous">
+<script>
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-axistitle@0.0.7/dist/chartist-plugin-axistitle.min.js" integrity="sha256-prApUlf6GL5TScu+1fzXL6UDmTFLl9v2Bsk57h4zlK8=" crossorigin="anonymous"></script>
@@ -81,6 +81,14 @@ select { margin-top: 1px; margin-bottom: 1px; }
 .bare .pane-menu { display: none; }
 .bare .pane-credit { display: none; }
 .bare .pane-chart { width: 100% }
+.searchline { display: flex; }
+.searchline .vue-simple-suggest{ flex-grow: 1; }
+.searchline button { margin: 2px 5px; height: 22px; vertical-align: bottom;
+  background-image: linear-gradient(to bottom, #fff 0%,#e5e5e5 100%);
+  border: 1px solid #aaa;
+  border-radius: 0.5em;
+  box-shadow: 0 1px 0 1px rgba(0,0,0,.04);
+}
 </style>
 </head>
 <body>
@@ -101,6 +109,10 @@ with highest numbers.</span> Data are from
 href="https://coronadatascraper.com/">coronadatascraper.com</a>
 <a v-else
 href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
+Click on the legend to toggle a series.
+Hover on points for specific numbers.
+<a href="javascript:" v-on:click="print_page()">Print the chart.</a>
+</p>
 <div style="text-align:center" class="buttonrow">
 <select v-model="chosen_domain" class="select-css">
   <option v-for="option in domain_choices" v-bind:value="option">
@@ -127,14 +139,13 @@ href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
     {{ option }}
   </option>
 </select></nobr>
+<div class="searchline">
 <vue-simple-suggest :list="available_localities" placeholder="Find a different county, state, or country"
 :filter-by-query="true" v-model="added_locality"
-@select="add_locality()"></vue-simple-suggest>
+@select="add_locality()"></vue-simple-suggest
+><button v-on:click="reset_include()">Reset</button>
 </div>
-<p>Click on the legend to toggle a series.
-Hover on points for specific numbers.
-<a href="javascript:" v-on:click="print_page()">Print the chart.</a>
-</p>
+</div>
 </form
 ><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
 ><div class="pane-credit">
@@ -439,7 +450,9 @@ function extract_data(csse, domain, field, stat, topcount, include) {
       top_states.push([inc, extra])
     }
   }
-  if (domain != 'Intl') { top_states.unshift([domain, global_series]); }
+  if (domain != 'Intl' && parseInt(topcount)) {
+    top_states.unshift([domain, global_series]);
+  }
   var described_series = top_states.map(p => [p[0], p[1].map((x, i) =>
      { return { meta: p[0] + ' ' + dates[i], value: x }; })]);
   return {
@@ -619,6 +632,10 @@ theapp = new Vue({
       var printwindow = window.open(this.make_url({bare:1,theme:'white'}));
       printwindow.onafterprint = function() { printwindow.close() };
       setTimeout(function() { printwindow.print(); }, 1200);
+    },
+    reset_include: function() {
+      this.chosen_include = null;
+      this.chosen_top = '10';
     },
     add_locality: function() {
       var app = this;

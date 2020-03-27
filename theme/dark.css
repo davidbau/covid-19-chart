@@ -21,6 +21,19 @@ select {
 select:focus {
   color: #fff;
 }
+.searchline .vue-simple-suggest .input-wrapper input,
+.searchline .vue-simple-suggest .suggestions {
+   background: #111; color: #ddd;
+   border-color: #555;
+}
+.searchline button {
+  background-image: linear-gradient(to bottom, #333 0%,#000 100%);
+  color: #ccc;
+  border: 1px solid #555;
+}
+.searchline button:focus {
+  color: #fff;
+}
 a { color: skyblue; }
 
 /* Lighten up the gray series color */
