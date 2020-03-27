@@ -33,7 +33,7 @@ lines = lines[:lines.index('</td></tr></tbody></table>')]
 # <td rowspan="5">...
 # </td></tr>
 
-js = ["USA_COUNTIES={\n"]
+js = ["FIPS_COUNTIES={\n"]
 for line in lines:
   if re.match(r'^<td[^>]*>\d{5}$', line):
     js.append(" '%s': " % line[-5:])
@@ -45,6 +45,6 @@ for line in lines:
       name, state = m.group(1).split(', ')
       state = normalize_state(state)
       js.append("'%s, %s',\n" % (normalize_name(name).decode('utf-8'), state))
-js.append("};\n")
-with open('usa_counties.js', 'w') as f:
+js.append("};\nCOUNTY_FIPS = _.invert(FIPS_COUNTIES);\n")
+with open('fips_counties.js', 'w') as f:
   f.write(''.join(js).encode('utf-8'))
