@@ -179,15 +179,35 @@ var csse = null,   // Cleaned data loaded from csse.
 // applies a rule for consolidating U.S. state data that is coded
 // as either "County Name, ST' or "State Name".
 //////////////////////////////////////////////////////////////////////
+function aggregate_level(row, aggregate_i, state_i, county_i, city_i) {
+  // For CSSE we need to sum up every matching row.
+  if (aggregate_i < 0) { return 1; }
+  // For CDS we need to sum up only the highest-level aggregate we see.
+  if (city_i >= 0 && row[city_i]) { return 4; } // city
+  if (county_i >= 0 && row[county_i]) { return 3; } // county
+  if (state_i >= 0 && row[state_i]) { return 2; } // state
+  return 1; // country
+}
 function rollup_ts(series, country_state_filter) {
   var names = series[0],
+    city_i = fieldnum(names, 'city'),
+    county_i = fieldnum(names, 'county'),
     state_i = fieldnum(names, 'state'),
     country_i = fieldnum(names, 'country'),
+    aggregate_i = fieldnum(names, 'aggregate'),
     ts_i = first_date_field(names),
     ts_names = names.slice(ts_i),
-    totals = _.fill(Array(ts_names.length), 0);
+    totals = Array(ts_names.length),
+    cur_agg = null;
   for (var row of series.slice(1)) {
     if (!country_state_filter(row[country_i], row[state_i])) { continue; }
+    var agg = aggregate_level(row, aggregate_i, state_i, county_i, city_i);
+    if (!cur_agg || agg < cur_agg) {
+      console.log('Setting aggregation level to ' + agg, row);
+       _.fill(totals, 0); cur_agg = agg;
+    }
+    if (agg != cur_agg) { continue; }
+    console.log('adding', row);
     for (var i = ts_i; i < names.length; ++i) {
       totals[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
     }
@@ -196,20 +216,29 @@ function rollup_ts(series, country_state_filter) {
 }
 function rollup_multi_ts(series, key_function) {
   var names = series[0],
+    city_i = fieldnum(names, 'city'),
+    county_i = fieldnum(names, 'county'),
     state_i = fieldnum(names, 'state'),
     country_i = fieldnum(names, 'country'),
+    aggregate_i = fieldnum(names, 'aggregate'),
     ts_i = first_date_field(names),
     ts_names = names.slice(ts_i),
-    all_totals = {};
+    all_totals = {},
+    all_agg = {};
   for (var row of series.slice(1)) {
     var keys = key_function(row[country_i], row[state_i]);
+    var agg = aggregate_level(row, aggregate_i, state_i, county_i, city_i);
     _.forEach(keys, key => {
-      if (!all_totals.hasOwnProperty(key)) {
+      if (!all_totals.hasOwnProperty(key) ||
+          !all_agg[key] || agg < all_agg[key]) {
         all_totals[key] = _.fill(Array(ts_names.length), 0);
+        all_agg[key] = agg;
       }
-      var sumrow = all_totals[key];
-      for (var i = ts_i; i < names.length; ++i) {
-        sumrow[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
+      if (agg == all_agg[key]) {
+        var sumrow = all_totals[key];
+        for (var i = ts_i; i < names.length; ++i) {
+          sumrow[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
+        }
       }
     });
   }
