@@ -35,8 +35,11 @@ chartist = Chartist; jquery = $;
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
 <script src="lib/load_csse.js"></script> <!-- JHU CSSE loader -->
+<script src="lib/load_cds.js"></script> <!-- JHU CSSE loader -->
 <script src="lib/utils.js"></script> <!-- Date and csv utilities -->
 <script src="lib/usa_state_list.js"></script> <!-- translating abbrevs -->
+<script src="lib/fips_counties.js"></script>
+<script src="lib/countries.js"></script>
 <link rel="stylesheet" href="lib/select.css"> <!-- mobile friendly select -->
 <link rel="stylesheet" href="lib/custom-chart.css"> <!-- colors etc -->
 <style>
@@ -255,7 +258,7 @@ function get_multi_local_data(csse, field, localities) {
   function keys_for_row(country, state) {
     var keys = [];
     if (requested[country]) { keys.push(country); }
-    if (requested_state && country == 'US') {
+    if (requested_state && country == 'US' && state) {
       var abbrev = (USA_ABBREV[state] || state.match(/[A-Z]{2}$/) || '') + '';
       if (requested[abbrev]) { keys.push(abbrev); }
     }
@@ -569,7 +572,10 @@ function score_series(stat, s) {
 // Initialization.
 // Load the csse data, and then tell the vue app to draw the chart.
 //////////////////////////////////////////////////////////////////////
-load_csse_data((d) => {
+var load_feed_data = (
+  location.href.indexOf('feed=cds') < 0 ? load_csse_data : load_cds_data);
+
+load_feed_data((d) => {
   csse = d;
   theapp.csse = d;
   theapp.draw_chart();
