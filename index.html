@@ -81,7 +81,10 @@ COVID-19 <nobr>Live Chart <span v-if="chosen_advanced == '1'">API</span>
 <p><span v-if="parseInt(chosen_top) > 0">Stats on {{ chosen_top }}
 {{ { US: 'states', Intl: 'countries outside China'}[chosen_domain] }}
 with highest numbers.</span> Data are from
-<a href="https://github.com/CSSEGISandData/COVID-19/" >Johns Hopkins CSSE</a>.
+<a v-if="data_feed_name == 'cds'"
+href="https://coronadatascraper.com/">coronadatascraper.com</a>
+<a v-else
+href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
 <p class="buttonrow">
 <select v-model="chosen_domain" class="select-css">
   <option v-for="option in domain_choices" v-bind:value="option">
@@ -167,6 +170,7 @@ Open source.
 //////////////////////////////////////////////////////////////////////
 // Globals - exposing these globals is useful for debugging.
 //////////////////////////////////////////////////////////////////////
+var data_feed_name = location.href.indexOf('feed=cds') < 0 ? 'csse' : 'cds';
 var csse = null,   // Cleaned data loaded from csse.
     chart = null,  // The main object, Chartist object.
     theapp = null; // Main application controller, Vue object.
@@ -511,6 +515,7 @@ theapp = new Vue({
   router: new VueRouter(),
   data: {
     csse: null,
+    data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
     domain_choices: ['US', 'Intl'],
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
@@ -599,9 +604,8 @@ function score_series(stat, s) {
 // Initialization.
 // Load the csse data, and then tell the vue app to draw the chart.
 //////////////////////////////////////////////////////////////////////
-var load_feed_data = (
-  location.href.indexOf('feed=cds') < 0 ? load_csse_data : load_cds_data);
 
+load_feed_data = (data_feed_name == 'cds' ? load_cds_data : load_csse_data);
 load_feed_data((d) => {
   csse = d;
   theapp.csse = d;
