@@ -203,7 +203,6 @@ var data_feed_name = location.href.indexOf('feed=cds') < 0 ? 'csse' : 'cds';
 var csse = null,   // Cleaned data loaded from csse.
     chart = null,  // The main object, Chartist object.
     theapp = null; // Main application controller, Vue object.
-    legendStates = []; // Legend state is saved separately for each domain
 
 //////////////////////////////////////////////////////////////////////
 // By-day summarization.
@@ -547,9 +546,9 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
       // Must be last to not intefere with axis titles.
       Chartist.plugins.legend({
         legendNames: extract.series.map(x => x[0]),
-        legendState: legendStates[theapp.chosen_domain],
+        legendState: theapp.legendStates[theapp.chosen_domain],
         onClick: function(chart, e, legends) {
-          legendStates[theapp.chosen_domain] = legends;
+          theapp.legendStates[theapp.chosen_domain] = legends;
         }
       }),
       Chartist.plugins.ctPointLabels({
@@ -579,6 +578,7 @@ theapp = new Vue({
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
     added_locality: null,
+    legendStates: []    // Legend state is saved separately for each domain
   },
   updated: function() {
     $('input').attr('autocomplete', 'none');
