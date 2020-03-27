@@ -24,10 +24,10 @@ def normalize(name):
   name = re.sub(', .*$', '', name)
   return name
 
-out = ['COUNTRIES = {\n']
+out = ['var COUNTRIES = {\n']
 for record in countries:
   out.append('%s: "%s",\n' % (record['alpha-3'], normalize(record['name'])))
-out.append('};\n')
+out.append('};\nvar COUNTRY_ABBREV = _.invert(COUNTRIES);\n')
 
 with open('countries.js', 'w') as f:
   f.write((''.join(out)).encode('utf-8'))
