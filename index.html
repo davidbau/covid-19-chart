@@ -618,7 +618,7 @@ theapp = new Vue({
     chosen_scale: function(val) { this.draw_chart(); },
   },
   methods: {
-    draw_chart: function() {
+    draw_chart: _.debounce(function() {
       var extract = this.extracted_data;
       if (!allowable_start_rule(extract, this.chosen_start)) {
         this.chosen_start = this.start_choices[0];
@@ -630,7 +630,7 @@ theapp = new Vue({
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
       plot_series(shifted_extract, this.chosen_stat, this.chosen_scale,
           xtitle, ytitle);
-    },
+    }, 100),
     make_url: function(opts) {
       return this.siteurl + this.$router.resolve(
           {query: _.defaults(opts, this.$route.query)}).href;
