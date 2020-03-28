@@ -1,0 +1,32 @@
+<html>
+<head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.js" integrity="sha256-iAuxnf8Cwr0yrQkpf6oQG4PaL/oVmoer6V/RfX2KQws=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
+<script src="/lib/load_csse.js"></script>
+<script src="/lib/utils.js"></script>
+</head>
+<body>
+<pre>
+</pre>
+<div id="map">
+</div>
+<script>
+var csse = null;
+var county_timeseries = null;
+var county_lastday = null;
+load_csse_data((d) => {
+  csse = d;
+  // document.querySelector('pre').innerText = JSON.stringify(d, null, 1);
+  document.querySelector('pre').innerText = 'Loaded csse with ' +
+    csse.confirmed.length + ' rows';
+  document.querySelector('#map').innerText = 'map here';
+  var name_row = csse.confirmed[0];
+  var fips_i = fieldnum(name_row, 'fips');
+  var first_date_i = first_date_field(name_row);
+  var county_rows = csse.confirmed.slice(1).filter(r => !!r[fips_i]);
+  county_timeseries = _.fromPairs(
+    county_rows.map(r => [r[fips_i], r.slice(first_date_i)]));
+  county_lastday = _.mapValues(county_timeseries, (v) => v[v.length - 1])
+});
+</script>
+
