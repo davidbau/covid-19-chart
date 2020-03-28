@@ -551,7 +551,6 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
         onClick: function(chart, e, legends) {
           theapp.legendStates[theapp.chosen_domain] = legends;
         },
-        colorCount: colors.length
       }),
       Chartist.plugins.ctPointLabels({
         textAnchor: 'middle'
@@ -562,22 +561,27 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
   return chart;
 }
 
-// I think we need to limit this to 26 because the chart uses styles names with letters (e.g. ct-series-a)
-var colors = ["#d70206", "#f05b4f", "#f4c63d", "#d17905", "#453d3f", "#59922b", "#0544d3", "#6b0392", "#dda458", "#eacf7d",
-              "#86797d", "#b2c326", "#6188e2", "#a748ca", "#a7f432", "#a83731", "#af6e4d", "#ff007c", "#fcd667", "#bfafb2",
-              "#c46210", "#4a646c", "#a6e7ff", "#ffd0b9", "#45a27d", "#3aa8c1"]
+// Chartist has a fixed set of 26 classes it cycles through (e.g. ct-series-z)
+var colors = [
+  "#d70206", "#f05b4f", "#f4c63d", "#d17905", "#453d3f", "#59922b", "#0544d3",
+  "#6b0392", "#dda458", "#eacf7d", "#86797d", "#b2c326", "#6188e2", "#a748ca",
+  "#a7f432", "#a83731", "#af6e4d", "#ff007c", "#fcd667", "#bfafb2", "#c46210",
+  "#4a646c", "#a6e7ff", "#ffd0b9", "#45a27d", "#3aa8c1"];
+
 //////////////////////////////////////////////////////////////////////
 // Dynamically create all styles, to make sure the ones from the chart
 // and from the legend match
 //////////////////////////////////////////////////////////////////////
 function createCssStyles() {
   for(var i=0; i < colors.length; i++) {
-    // Using style injection technique from https://stackoverflow.com/a/1720483/111888
+    // Using style injection technique from
+    // https://stackoverflow.com/a/1720483/111888
     var style = document.createElement('style');
     style.type = 'text/css';
 
-    // This overrides the css styles for both the chart and the legend (and adds a longer list)
-    // Legend uses number modifiers, while chart uses letter modifiers
+    // This overrides the css styles for both the chart and the
+    // legend (and adds a longer list) Legend uses number modifiers,
+    // while chart uses letter modifiers
     style.innerHTML = `
       .ct-legend .ct-series-${i}:before,
       .ct-series-${String.fromCharCode(97+i)} .ct-line,
