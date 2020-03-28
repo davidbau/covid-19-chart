@@ -460,6 +460,11 @@ function extract_data(csse, domain, field, stat, topcount, include) {
   }
   var described_series = top_states.map(p => [p[0], p[1].map((x, i) =>
      { return { meta: p[0] + ' ' + dates[i], value: x }; })]);
+
+  // Sort by locality (but always put "US" first when dealing with states)
+  described_series = described_series.sort(
+    (x, y) => domain != 'Intl' && y[0] == "US" ? 1 : x[0] < y[0] ? -1 : 1);
+
   return {
     labels: dates,
     series: described_series
