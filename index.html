@@ -143,7 +143,8 @@ Hover on points for specific numbers.
   </option>
 </select></nobr>
 <div class="searchline">
-<vue-simple-suggest :list="available_localities" placeholder="Find a different county, state, or country"
+<vue-simple-suggest :list="available_localities" ref="suggest"
+ placeholder="Find a different county, state, or country"
 :filter-by-query="true" v-model="added_locality"
 @select="add_locality()"></vue-simple-suggest
 ><button v-on:click="reset_include()">Reset</button>
@@ -618,7 +619,7 @@ theapp = new Vue({
     legendStates: []    // Legend state is saved separately for each domain
   },
   updated: function() {
-    $('input').attr('autocomplete', 'none');
+    this.configure_suggest();
   },
   computed: {
     start_choices: function() {
@@ -696,6 +697,27 @@ theapp = new Vue({
         app.added_locality = '';
       }, 200);
     },
+    configure_suggest: function() {
+      // kill Chrome's autofill.
+      $('input').attr('autocomplete', 'none');
+      this.$refs.suggest.controlScheme.select = [13, 9];
+      // Monkey-patch autocomplete, to select default on plain 'Enter' or 'Tab'.
+      // https://github.com/KazanExpress/vue-simple-suggest/blob
+      // /3999287560363908b62a48eaf50ad7e1e38dde0e/lib
+      // /vue-simple-suggest.vue#L334-L342
+      var oldSelect = this.$refs.suggest.select;
+      this.$refs.suggest.select = function(item) {
+        if (!item && this.suggestions.length > 0 && this.suggestions[0]) {
+          item = this.suggestions[0];
+        }
+        return oldSelect(item);
+      }
+      var oldOnShowList = this.$refs.suggest.onShowList;
+      this.$refs.suggest.onShowList = function(e) {
+        oldOnShowList(e);
+        if (this.listShown && e.key == 'Tab') { e.preventDefault(); }
+      };
+    }
   }
 });
 
