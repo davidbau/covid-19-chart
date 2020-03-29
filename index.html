@@ -572,19 +572,49 @@ var colors = [
   "#6b0392", "#dda458", "#eacf7d", "#86797d", "#b2c326", "#6188e2", "#a748ca",
   "#a7f432", "#a83731", "#af6e4d", "#ff007c", "#fcd667", "#bfafb2", "#c46210",
   "#4a646c", "#a6e7ff", "#ffd0b9", "#45a27d", "#3aa8c1"];
+
+// List of style elements we have created
 var styleNodes = [];
+
+// The current mapping from locality name to color index
+var currentMapping = {}
 
 //////////////////////////////////////////////////////////////////////
 // Dynamically create all styles, to make sure the ones from the chart
 // and from the legend match.
 //////////////////////////////////////////////////////////////////////
-function createCssStyles(domain, field, localitiesInUse) {
-  var allLocalities = (domain == 'Intl' ?
-      all_countries(csse[field]) : _.keys(USA_STATES));
-  if (domain != 'Intl') allLocalities.unshift("US");
+function createCssStyles(localities) {
+  // Keep track of color indices that are no longer available
+  var colorsInUse = {}
 
-  // We can never set more than the total number of css styles
-  var max = Math.min(localitiesInUse.length, 26);
+  var previousMapping = currentMapping;
+  currentMapping = {}
+
+  // Pass 1: for any current locality that was in the previous list, reuse
+  // its color and mark that color index as in-use
+  for (var i = 0; i < localities.length; i++) {
+    var locality = localities[i];
+
+    if (previousMapping[locality] !== undefined) {
+      currentMapping[locality] = previousMapping[locality];
+      colorsInUse[currentMapping[locality]] = true;
+    }
+  }
+
+  // Pass 2: for any current locality that was *not* in the previous list,
+  // assign it the next available color index
+  for (var i = 0, colorIndex = 0; i < localities.length; i++) {
+    var locality = localities[i];
+
+    if (previousMapping[locality] === undefined) {
+      // Skip any color indices that were used in pass 1
+      while (colorsInUse[colorIndex]) colorIndex++;
+
+      currentMapping[locality] = colorIndex++;
+    }
+  }
+
+  // Here, currentMapping has a color index for each locality in the chart
 
   var documentHead = document.getElementsByTagName('head')[0];
 
@@ -592,12 +622,11 @@ function createCssStyles(domain, field, localitiesInUse) {
   _.forEach(styleNodes, node => documentHead.removeChild(node));
   styleNodes = [];
 
-  // Go through all the localities that are actually being charted
-  for(var i=0; i < max; i++) {
-    // Find the index of the current locality in the full list,
-    // and use it to get a stable color for that locality
-    var colorIndex = allLocalities.indexOf(localitiesInUse[i])
-    var color = colors[colorIndex % colors.length];
+  var styleIndex = 0;
+  for (const locality in currentMapping) {
+    var colorIndex = currentMapping[locality] % colors.length;
+
+    var color = colors[colorIndex];
 
     // Using style injection technique from
     // https://stackoverflow.com/a/1720483/111888
@@ -608,9 +637,9 @@ function createCssStyles(domain, field, localitiesInUse) {
     // legend (and adds a longer list) Legend uses number modifiers,
     // while chart uses letter modifiers
     style.innerHTML = `
-      .ct-legend .ct-series-${i}:before,
-      .ct-series-${String.fromCharCode(97+i)} .ct-line,
-      .ct-series-${String.fromCharCode(97+i)} .ct-point {
+      .ct-legend .ct-series-${styleIndex}:before,
+      .ct-series-${String.fromCharCode(97+styleIndex)} .ct-line,
+      .ct-series-${String.fromCharCode(97+styleIndex)} .ct-point {
         background-color: ${color};
         border-color: ${color};
         stroke: ${color}
@@ -618,6 +647,9 @@ function createCssStyles(domain, field, localitiesInUse) {
 
     styleNodes.push(style); // Keep track of it for cleanup purposes
     documentHead.appendChild(style);
+
+    // Don't try to set more than 26 styles, since that's the chart limit
+    if (styleIndex++ >= 26) break;
   }
 }
 
@@ -660,7 +692,7 @@ theapp = new Vue({
       var data = extract_data(this.csse, this.chosen_domain,
           this.chosen_series, this.chosen_stat,
           this.chosen_top, this.chosen_include);
-      createCssStyles(this.chosen_domain, this.chosen_series, _.map(data.series, entry => entry[0]));
+      createCssStyles(_.map(data.series, entry => entry[0]));
       return data;
     },
     chosen_domain: url_property('domain', 'US'),
