@@ -368,7 +368,7 @@ function available_start_rules(extracted) {
   var other_d = dates.slice(1).filter(x => !!/^\d+\/1\/\d+$/.exec(x));
   var third_v = _.sortBy(data_series.map(
       x => _.max(x[1].map(x => x.value))), x => -x)[2];
-  var gt_rules = [10, 30, 100, 300, 1000].filter(
+  var gt_rules = [10, 30, 80, 100, 300, 1000].filter(
       x => (x < third_v)).map(x => '>=' + x);
   return _.concat([first_d], other_d, gt_rules);
 }
@@ -639,7 +639,7 @@ theapp = new Vue({
   },
   computed: {
     start_choices: function() {
-      if (this.csse == null) { return ['1/1/20', '>=30', '>=1000']; }
+      if (this.csse == null) { return ['1/1/20', '>=80', '>=1000']; }
       var extract = this.extracted_data;
       var choices = available_start_rules(extract);
       if (this.chosen_start && choices.indexOf(this.chosen_start) < 0) {
@@ -658,7 +658,7 @@ theapp = new Vue({
     chosen_series: url_property('series', 'confirmed'),
     chosen_stat: url_property('stat', 'totals'),
     chosen_scale: url_property('scale', 'log10'),
-    chosen_start: url_property('start', '>=30'),
+    chosen_start: url_property('start', '>=80'),
     chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
     chosen_select: url_property('select', ''),
