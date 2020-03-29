@@ -766,8 +766,16 @@ function all_localities(csse) {
 function url_property(name, default_value, nav) {
   return {
     get() { return this.$route.query[name] || default_value },
-    set(value) { this.$router[nav ? 'push' : 'replace']({query: _.defaults(
-      { [name]: value }, this.$route.query) }).catch(err => {}); }
+    set(value) {
+      var o = _.defaults({ [name]: value }, this.$route.query);
+
+      // If it's the default value, get rid of it to clean up the URL
+      if (value == default_value) {
+        delete o[name];
+      }
+
+      this.$router[nav ? 'push' : 'replace']({query: o }).catch(err => {});
+    }
   };
 }
 function score_series(stat, s) {
