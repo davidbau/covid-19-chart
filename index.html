@@ -485,7 +485,7 @@ function xaxis_title(field, start) {
 // The extract data is plotted using chartist.js,
 // using the given scale.
 //////////////////////////////////////////////////////////////////////
-function plot_series(extract, stat, scale, xaxis, yaxis) {
+function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
   if (stat == 'deltas') {
@@ -551,11 +551,10 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
       // Must be last to not intefere with axis titles.
       Chartist.plugins.legend({
         legendNames: extract.series.map(x => x[0]),
-        legendState: getLegendState(),
+        legendState: !select ? [] : select.split(';'),
         onClick: function(chart, e, legends) {
           // Persist the state, and remember what domain it's for
-          theapp.selectStateDomain = theapp.chosen_domain;
-          theapp.chosen_select = legends.length == 0 ? "" : legends.join(';');
+          updateSelect(legends.join(';'));
         },
       }),
       Chartist.plugins.ctPointLabels({
@@ -565,19 +564,6 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
   });
   preparePrintChart(chart);
   return chart;
-}
-
-function getLegendState() {
-  if (theapp.selectStateDomain == null) {
-    // When the page is first loaded, this will be null
-    theapp.selectStateDomain = theapp.chosen_domain;
-  }
-  else if (theapp.selectStateDomain != theapp.chosen_domain) {
-    // If the saved state pertains to a different domain, ignore it
-    theapp.chosen_select = "";
-  }
-
-  return theapp.chosen_select == "" ? [] : theapp.chosen_select.split(';');
 }
 
 // Chartist has a fixed set of 26 classes it cycles through (e.g. ct-series-z)
@@ -683,7 +669,9 @@ theapp = new Vue({
           this.chosen_scale);
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
       plot_series(shifted_extract, this.chosen_stat, this.chosen_scale,
-          xtitle, ytitle);
+          xtitle, ytitle,
+          this.chosen_select,
+          s => { this.chosen_select = s; });
     }, 100),
     make_url: function(opts) {
       return this.siteurl + this.$router.resolve(
