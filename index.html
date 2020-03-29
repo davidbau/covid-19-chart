@@ -164,7 +164,6 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=num, or m/d/y)</td></tr>
 <tr><td>Top:</td><td><input v-model.lazy="chosen_top"> (integer)</td></tr>
 <tr><td>Include:</td><td><input v-model.lazy="chosen_include"> (';' between states)</td></tr>
-<tr><td>Select:</td><td><input v-model.lazy="chosen_select"> (';' between states)</td></tr>
 <tr><td>Theme:</td><td><input v-model.lazy="chosen_theme"> (white/dark/paper)</td></tr>
 <tr><td>Advanced:</td><td> <input v-model.lazy="chosen_advanced"> (1 or 0)</td></tr>
 <tr><td>Bare:</td><td> <input v-model.lazy="chosen_bare"> (1 or 0)</td></tr>
@@ -551,11 +550,9 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
       // Must be last to not intefere with axis titles.
       Chartist.plugins.legend({
         legendNames: extract.series.map(x => x[0]),
-        legendState: getLegendState(),
+        legendState: theapp.legendStates[theapp.chosen_domain],
         onClick: function(chart, e, legends) {
-          // Persist the state, and remember what domain it's for
-          theapp.selectStateDomain = theapp.chosen_domain;
-          theapp.chosen_select = legends.length == 0 ? "" : legends.join(';');
+          theapp.legendStates[theapp.chosen_domain] = legends;
         },
       }),
       Chartist.plugins.ctPointLabels({
@@ -565,19 +562,6 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
   });
   preparePrintChart(chart);
   return chart;
-}
-
-function getLegendState() {
-  if (theapp.selectStateDomain == null) {
-    // When the page is first loaded, this will be null
-    theapp.selectStateDomain = theapp.chosen_domain;
-  }
-  else if (theapp.selectStateDomain != theapp.chosen_domain) {
-    // If the saved state pertains to a different domain, ignore it
-    theapp.chosen_select = "";
-  }
-
-  return theapp.chosen_select == "" ? [] : theapp.chosen_select.split(';');
 }
 
 // Chartist has a fixed set of 26 classes it cycles through (e.g. ct-series-z)
@@ -632,7 +616,7 @@ theapp = new Vue({
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
     added_locality: null,
-    selectStateDomain: null // The domain that the saved state is for
+    legendStates: []    // Legend state is saved separately for each domain
   },
   updated: function() {
     this.configure_suggest();
@@ -661,7 +645,6 @@ theapp = new Vue({
     chosen_start: url_property('start', '>=80'),
     chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
-    chosen_select: url_property('select', ''),
     chosen_theme: url_property('theme', 'paper'),
     chosen_bare: url_property('bare', '0', true),
     chosen_advanced: url_property('advanced', '0'),
