@@ -67,13 +67,13 @@
 		 var width = 960, height = 600, centered;
 		 var color_domain = [10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 		 var ext_color_domain = [0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
-		 var legend_labels = ["< 10", "50+", "100+", "200+", "300+", "400+", "500+", "600+", "700+", "800+", "900+", "1000+"]
+		 var legend_labels = ["< 10", "50+", "100+", "200+", "300+", "400+", "500+", "600+", "700+", "800+", "900+", "1000+", "1100+"]
 		 var color = d3.scale.threshold()
 
 		 .domain(color_domain)
 		 .range(["#dcdcdc", "#d0d6cd", "#bdc9be", "#aabdaf", "#97b0a0", "#84a491", "#719782", "#5e8b73", "#4b7e64", "#387255", "#256546", "#125937", "#004d28"]);
 
-			var div = d3.select("body").append("div")
+		var div = d3.select("body").append("div")
 		 .attr("class", "tooltip")
 		 .style("opacity", 0);
 
@@ -81,11 +81,8 @@
 		 .attr("width", width)
 		 .attr("height", height)
 		 .style("margin", "-15px auto");
-		 var path = d3.geo.path()
 
-    var g = svg.append("g");
-
-
+    var path = d3.geo.path();
 
 		queue()
 		 .defer(d3.json, "us.json")
@@ -118,40 +115,41 @@
 		 pairNameWithId[d.id] = d.city;
 		 });
 		 svg.append("g")
-		 .attr("class", "county")
-		 .selectAll("path")
-		 .data(topojson.feature(us, us.objects.counties).features)
-		 .enter().append("path")
-		 .attr({
-       "d": path,
-       "cursor": "pointer"
-     })
-		 .style ( "fill" , function (d) {
-		 return color (pairCaseWithId[d.id]);
-		 })
-		 .style("opacity", 0.8)
-		 .on("mouseover", function(d) {
-		 	var sel = d3.select(this);
-  			sel.moveToFront();
-		 d3.select(this).transition().duration(300).style({'opacity': 1, 'stroke': 'black', 'stroke-width': 1.5});
-		 div.transition().duration(300)
-		 .style("opacity", 1)
-		 div.text(pairNameWithId[d.id] + ": " + pairCaseWithId[d.id])
-		 .style("left", (d3.event.pageX) + "px")
-		 .style("top", (d3.event.pageY -30) + "px");
-		 })
-		 .on("mouseout", function() {
-		 	var sel = d3.select(this);
-  			sel.moveToBack();
-		 d3.select(this)
-		 .transition().duration(300)
-		 .style({'opacity': 0.8, 'stroke': 'white', 'stroke-width': 1});
-		 div.transition().duration(300)
-		 .style("opacity", 0);
-		 })
-     .on("click", clicked)
-
+  		 .attr("class", "county")
+  		 .selectAll("path")
+  		 .data(topojson.feature(us, us.objects.counties).features)
+  		 .enter().append("path")
+  		 .attr({
+         "d": path,
+         "cursor": "pointer"
+       })
+  		 .style ( "fill" , function (d) {
+  		 return color (pairCaseWithId[d.id]);
+  		 })
+  		 .style("opacity", 0.8)
+  		 .on("mouseover", function(d) {
+  		 	var sel = d3.select(this);
+    			sel.moveToFront();
+  		 d3.select(this).transition().duration(300).style({'opacity': 1, 'stroke': 'black', 'stroke-width': 1.5});
+  		 div.transition().duration(300)
+  		 .style("opacity", 1)
+  		 div.text(pairNameWithId[d.id] + ": " + pairCaseWithId[d.id])
+  		 .style("left", (d3.event.pageX) + "px")
+  		 .style("top", (d3.event.pageY -30) + "px");
+  		 })
+  		 .on("mouseout", function() {
+  		 	var sel = d3.select(this);
+    			sel.moveToBack();
+  		 d3.select(this)
+  		 .transition().duration(300)
+  		 .style({'opacity': 0.8, 'stroke': 'white', 'stroke-width': 1});
+  		 div.transition().duration(300)
+  		 .style("opacity", 0);
+  		 })
+       .on("click", clicked)
 		 };
+
+    var g = svg.append("g");
 
 		var legend = svg.selectAll("g.legend")
 		 .data(ext_color_domain)
@@ -182,20 +180,20 @@
 		 .text(function(){return legend_title});
 
      function clicked(d) {
-  var x, y, k;
+        var x, y, k;
 
-  if (d && centered !== d) {
-    var centroid = path.centroid(d);
-    x = centroid[0];
-    y = centroid[1];
-    k = 4;
-    centered = d;
-  } else {
-    x = width / 2;
-    y = height / 2;
-    k = 1;
-    centered = null;
-  }
+        if (d && centered !== d) {
+          var centroid = path.centroid(d);
+          x = centroid[0];
+          y = centroid[1];
+          k = 4;
+          centered = d;
+        } else {
+          x = width / 2;
+          y = height / 2;
+          k = 1;
+          centered = null;
+        }
 
   g.selectAll("path")
       .classed("active", centered && function(d) { return d === centered; });
