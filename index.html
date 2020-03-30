@@ -577,7 +577,7 @@ var colors = [
 var styleNodes = [];
 
 // The current mapping from locality name to color index
-var currentMapping = {}
+var currentLocalityToColorIndex = {}
 
 //////////////////////////////////////////////////////////////////////
 // Dynamically create all styles, to make sure the ones from the chart
@@ -587,8 +587,8 @@ function createCssStyles(localities) {
   // Keep track of color indices that are no longer available
   var colorsInUse = {}
 
-  var previousMapping = currentMapping;
-  currentMapping = {}
+  var previousMapping = currentLocalityToColorIndex;
+  currentLocalityToColorIndex = {}
 
   // Pass 1: for any current locality that was in the previous list, reuse
   // its color and mark that color index as in-use
@@ -596,8 +596,8 @@ function createCssStyles(localities) {
     var locality = localities[i];
 
     if (previousMapping[locality] !== undefined) {
-      currentMapping[locality] = previousMapping[locality];
-      colorsInUse[currentMapping[locality]] = true;
+      currentLocalityToColorIndex[locality] = previousMapping[locality];
+      colorsInUse[currentLocalityToColorIndex[locality]] = true;
     }
   }
 
@@ -610,11 +610,11 @@ function createCssStyles(localities) {
       // Skip any color indices that were used in pass 1
       while (colorsInUse[colorIndex]) colorIndex++;
 
-      currentMapping[locality] = colorIndex++;
+      currentLocalityToColorIndex[locality] = colorIndex++;
     }
   }
 
-  // Here, currentMapping has a color index for each locality in the chart
+  // Here, currentLocalityToColorIndex has a color index for each locality in the chart
 
   var documentHead = document.getElementsByTagName('head')[0];
 
@@ -623,8 +623,8 @@ function createCssStyles(localities) {
   styleNodes = [];
 
   var styleIndex = 0;
-  for (const locality in currentMapping) {
-    var colorIndex = currentMapping[locality] % colors.length;
+  for (const locality in currentLocalityToColorIndex) {
+    var colorIndex = currentLocalityToColorIndex[locality] % colors.length;
 
     var color = colors[colorIndex];
 
