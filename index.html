@@ -584,11 +584,12 @@ var currentLocalityToColorIndex = {}
 // and from the legend match.
 //////////////////////////////////////////////////////////////////////
 function createCssStyles(localities) {
-  // Keep track of color indices that are no longer available
-  var colorIndicesInUse = {}
-
+  // Make use of the previous mapping, and start a new one for ths round
   var previousLocalityToColorIndex = currentLocalityToColorIndex;
   currentLocalityToColorIndex = {}
+
+  // Keep track of color indices used in phase 1, to avoid them in phase 2
+  var colorIndicesInUse = {}
 
   // Pass 1: for any current locality that was in the previous list, reuse
   // its color and mark that color index as in-use
