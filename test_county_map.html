@@ -85,8 +85,8 @@
     var path = d3.geo.path();
 
 		queue()
-		 .defer(d3.json, "us.json")
-		 .defer(d3.csv, "county_dates.csv")
+		 .defer(d3.json, "testdata/us.json")
+		 .defer(d3.csv, "testdata/county_dates.csv")
 		 .await(ready);
 
 		function ready(error, us, data) {
