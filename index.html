@@ -585,9 +585,9 @@ var currentLocalityToColorIndex = {}
 //////////////////////////////////////////////////////////////////////
 function createCssStyles(localities) {
   // Keep track of color indices that are no longer available
-  var colorsInUse = {}
+  var colorIndicesInUse = {}
 
-  var previousMapping = currentLocalityToColorIndex;
+  var previousLocalityToColorIndex = currentLocalityToColorIndex;
   currentLocalityToColorIndex = {}
 
   // Pass 1: for any current locality that was in the previous list, reuse
@@ -595,9 +595,9 @@ function createCssStyles(localities) {
   for (var i = 0; i < localities.length; i++) {
     var locality = localities[i];
 
-    if (previousMapping[locality] !== undefined) {
-      currentLocalityToColorIndex[locality] = previousMapping[locality];
-      colorsInUse[currentLocalityToColorIndex[locality]] = true;
+    if (previousLocalityToColorIndex[locality] !== undefined) {
+      currentLocalityToColorIndex[locality] = previousLocalityToColorIndex[locality];
+      colorIndicesInUse[currentLocalityToColorIndex[locality]] = true;
     }
   }
 
@@ -606,9 +606,9 @@ function createCssStyles(localities) {
   for (var i = 0, colorIndex = 0; i < localities.length; i++) {
     var locality = localities[i];
 
-    if (previousMapping[locality] === undefined) {
+    if (previousLocalityToColorIndex[locality] === undefined) {
       // Skip any color indices that were used in pass 1
-      while (colorsInUse[colorIndex]) colorIndex++;
+      while (colorIndicesInUse[colorIndex]) colorIndex++;
 
       currentLocalityToColorIndex[locality] = colorIndex++;
     }
