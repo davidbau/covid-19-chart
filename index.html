@@ -623,10 +623,8 @@ function createCssStyles(localities) {
   _.forEach(styleNodes, node => documentHead.removeChild(node));
   styleNodes = [];
 
-  var styleIndex = 0;
-  for (var i = 0, colorIndex = 0; i < localities.length; i++) {
-    var locality = localities[i];
-    var colorIndex = currentLocalityToColorIndex[locality] % colors.length;
+  for (var i = 0, colorIndex = 0; i < localities.length && i < 26; i++) {
+    var colorIndex = currentLocalityToColorIndex[localities[i]] % colors.length;
 
     var color = colors[colorIndex];
 
@@ -639,9 +637,9 @@ function createCssStyles(localities) {
     // legend (and adds a longer list) Legend uses number modifiers,
     // while chart uses letter modifiers
     style.innerHTML = `
-      .ct-legend .ct-series-${styleIndex}:before,
-      .ct-series-${String.fromCharCode(97+styleIndex)} .ct-line,
-      .ct-series-${String.fromCharCode(97+styleIndex)} .ct-point {
+      .ct-legend .ct-series-${i}:before,
+      .ct-series-${String.fromCharCode(97+i)} .ct-line,
+      .ct-series-${String.fromCharCode(97+i)} .ct-point {
         background-color: ${color};
         border-color: ${color};
         stroke: ${color}
@@ -649,9 +647,6 @@ function createCssStyles(localities) {
 
     styleNodes.push(style); // Keep track of it for cleanup purposes
     documentHead.appendChild(style);
-
-    // Don't try to set more than 26 styles, since that's the chart limit
-    if (styleIndex++ >= 26) break;
   }
 }
 
