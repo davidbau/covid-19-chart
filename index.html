@@ -577,27 +577,28 @@ var colors = [
 var styleNodes = [];
 
 // The current mapping from locality name to color index
-var currentMapping = {}
+var currentLocalityToColorIndex = {}
 
 //////////////////////////////////////////////////////////////////////
 // Dynamically create all styles, to make sure the ones from the chart
 // and from the legend match.
 //////////////////////////////////////////////////////////////////////
 function createCssStyles(localities) {
-  // Keep track of color indices that are no longer available
-  var colorsInUse = {}
+  // Make use of the previous mapping, and start a new one for ths round
+  var previousLocalityToColorIndex = currentLocalityToColorIndex;
+  currentLocalityToColorIndex = {}
 
-  var previousMapping = currentMapping;
-  currentMapping = {}
+  // Keep track of color indices used in phase 1, to avoid them in phase 2
+  var colorIndicesInUse = {}
 
   // Pass 1: for any current locality that was in the previous list, reuse
   // its color and mark that color index as in-use
   for (var i = 0; i < localities.length; i++) {
     var locality = localities[i];
 
-    if (previousMapping[locality] !== undefined) {
-      currentMapping[locality] = previousMapping[locality];
-      colorsInUse[currentMapping[locality]] = true;
+    if (previousLocalityToColorIndex[locality] !== undefined) {
+      currentLocalityToColorIndex[locality] = previousLocalityToColorIndex[locality];
+      colorIndicesInUse[currentLocalityToColorIndex[locality]] = true;
     }
   }
 
@@ -606,15 +607,15 @@ function createCssStyles(localities) {
   for (var i = 0, colorIndex = 0; i < localities.length; i++) {
     var locality = localities[i];
 
-    if (previousMapping[locality] === undefined) {
+    if (previousLocalityToColorIndex[locality] === undefined) {
       // Skip any color indices that were used in pass 1
-      while (colorsInUse[colorIndex]) colorIndex++;
+      while (colorIndicesInUse[colorIndex]) colorIndex++;
 
-      currentMapping[locality] = colorIndex++;
+      currentLocalityToColorIndex[locality] = colorIndex++;
     }
   }
 
-  // Here, currentMapping has a color index for each locality in the chart
+  // Here, currentLocalityToColorIndex has a color index for each locality in the chart
 
   var documentHead = document.getElementsByTagName('head')[0];
 
@@ -622,9 +623,8 @@ function createCssStyles(localities) {
   _.forEach(styleNodes, node => documentHead.removeChild(node));
   styleNodes = [];
 
-  var styleIndex = 0;
-  for (const locality in currentMapping) {
-    var colorIndex = currentMapping[locality] % colors.length;
+  for (var i = 0, colorIndex = 0; i < localities.length && i < 26; i++) {
+    var colorIndex = currentLocalityToColorIndex[localities[i]] % colors.length;
 
     var color = colors[colorIndex];
 
@@ -637,9 +637,9 @@ function createCssStyles(localities) {
     // legend (and adds a longer list) Legend uses number modifiers,
     // while chart uses letter modifiers
     style.innerHTML = `
-      .ct-legend .ct-series-${styleIndex}:before,
-      .ct-series-${String.fromCharCode(97+styleIndex)} .ct-line,
-      .ct-series-${String.fromCharCode(97+styleIndex)} .ct-point {
+      .ct-legend .ct-series-${i}:before,
+      .ct-series-${String.fromCharCode(97+i)} .ct-line,
+      .ct-series-${String.fromCharCode(97+i)} .ct-point {
         background-color: ${color};
         border-color: ${color};
         stroke: ${color}
@@ -647,9 +647,6 @@ function createCssStyles(localities) {
 
     styleNodes.push(style); // Keep track of it for cleanup purposes
     documentHead.appendChild(style);
-
-    // Don't try to set more than 26 styles, since that's the chart limit
-    if (styleIndex++ >= 26) break;
   }
 }
 
