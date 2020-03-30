@@ -624,7 +624,8 @@ function createCssStyles(localities) {
   styleNodes = [];
 
   var styleIndex = 0;
-  for (const locality in currentLocalityToColorIndex) {
+  for (var i = 0, colorIndex = 0; i < localities.length; i++) {
+    var locality = localities[i];
     var colorIndex = currentLocalityToColorIndex[locality] % colors.length;
 
     var color = colors[colorIndex];
