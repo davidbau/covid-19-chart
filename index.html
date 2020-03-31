@@ -711,10 +711,9 @@ theapp = new Vue({
       return choices;
     },
     extracted_data: function() {
-      var data = extract_data(this.csse, this.chosen_domain,
+      return extract_data(this.csse, this.chosen_domain,
           this.chosen_series, this.chosen_stat,
           this.chosen_top, this.chosen_include);
-      return data;
     },
     chosen_domain: url_property('domain', 'US'),
     chosen_series: url_property('series', 'confirmed'),
