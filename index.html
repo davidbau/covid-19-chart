@@ -161,6 +161,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td>Series:</td><td><input v-model.lazy="chosen_series"> (confirmed/deaths)</td></tr>
 <tr><td>Stat:</td><td><input v-model.lazy="chosen_stat"> (totals/deltas)</td></tr>
 <tr><td>Scale:</td><td><input v-model.lazy="chosen_scale"> (linear/log10)</td></tr>
+<tr><td>Norm:</td><td><input v-model.lazy="chosen_norm"> (none/first)</td></tr>
 <tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=num, or m/d/y)</td></tr>
 <tr><td>Top:</td><td><input v-model.lazy="chosen_top"> (integer)</td></tr>
 <tr><td>Include:</td><td><input v-model.lazy="chosen_include"> (';' between states)</td></tr>
@@ -353,6 +354,24 @@ function get_multi_local_data(csse, field, localities) {
 }
 
 //////////////////////////////////////////////////////////////////////
+// Normalization.
+//////////////////////////////////////////////////////////////////////
+function apply_norm_rule(rule, extracted) {
+  if (rule == 'none') { return extracted; }
+  if (rule == 'first') {
+    extracted.series = extracted.series.map(s => {
+      var first_pos_val = s[1].filter(d => d.value > 0)[0].value || 1;
+      return [s[0], s[1].map(
+          d => d && _.defaults({
+            meta: d.meta + ' (' + d.value + ')',
+            value: d.value / first_pos_val
+          }, d))];
+    });
+  }
+  return extracted;
+}
+
+//////////////////////////////////////////////////////////////////////
 // Start-day shifting.
 // To make different time series comparable, we can start them
 // all on the same day, or count "day 0" as the day when they
@@ -466,9 +485,10 @@ function extract_data(csse, domain, field, stat, topcount, include) {
     series: described_series
   };
 }
-function yaxis_title(field, stat, scale) {
+function yaxis_title(field, stat, scale, norm) {
   var desc = {totals: 'Total cumulative ', deltas: 'Daily new '}[stat] +
              {confirmed: 'confirmed cases', deaths: 'deaths'}[field] +
+             {first: ', / first day', 'none': ''}[norm] +
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
 }
@@ -700,6 +720,7 @@ theapp = new Vue({
     chosen_series: url_property('series', 'confirmed'),
     chosen_stat: url_property('stat', 'totals'),
     chosen_scale: url_property('scale', 'log10'),
+    chosen_norm: url_property('norm', 'none'),
     chosen_start: url_property('start', '>=80'),
     chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
@@ -720,12 +741,13 @@ theapp = new Vue({
         this.chosen_start = this.start_choices[0];
       }
       var shifted = apply_start_rule(this.chosen_start, extract);
+      var normalized = apply_norm_rule(this.chosen_norm, shifted);
       var ordered = _.defaults({
-        series: reorderSeriesForColorStability(shifted.series)
+        series: reorderSeriesForColorStability(normalized.series)
       }, shifted);
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
-          this.chosen_scale);
+          this.chosen_scale, this.chosen_norm);
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
       plot_series(ordered, this.chosen_stat, this.chosen_scale,
           xtitle, ytitle,
