@@ -20,6 +20,11 @@
 	 	font-family: 'Proxima Nova', sans-serif;
 	}
 
+  .background {
+  fill: none;
+  pointer-events: all;
+  }
+
 	.county {
 	 	font: 14px sans-serif;
 	 	font-weight: bold;
@@ -73,6 +78,8 @@
 		 .domain(color_domain)
 		 .range(["#dcdcdc", "#d0d6cd", "#bdc9be", "#aabdaf", "#97b0a0", "#84a491", "#719782", "#5e8b73", "#4b7e64", "#387255", "#256546", "#125937", "#004d28"]);
 
+    var path = d3.geo.path();
+
 		var div = d3.select("body").append("div")
 		 .attr("class", "tooltip")
 		 .style("opacity", 0);
@@ -82,7 +89,13 @@
 		 .attr("height", height)
 		 .style("margin", "-15px auto");
 
-    var path = d3.geo.path();
+    svg.append("rect")
+     .attr("class", "background")
+     .attr("width", width)
+     .attr("height", height)
+     .on("click", clicked);
+
+
 
 		queue()
 		 .defer(d3.json, "testdata/us.json")
@@ -117,12 +130,12 @@
 		 svg.append("g")
   		 .attr("class", "county")
   		 .selectAll("path")
-  		 .data(topojson.feature(us, us.objects.counties).features)
+  		   .data(topojson.feature(us, us.objects.counties).features)
   		 .enter().append("path")
-  		 .attr({
-         "d": path,
-         "cursor": "pointer"
-       })
+    		 .attr({
+           "d": path,
+           "cursor": "pointer"
+         })
   		 .style ( "fill" , function (d) {
   		 return color (pairCaseWithId[d.id]);
   		 })
@@ -149,7 +162,6 @@
        .on("click", clicked)
 		 };
 
-    var g = svg.append("g");
 
 		var legend = svg.selectAll("g.legend")
 		 .data(ext_color_domain)
@@ -195,11 +207,11 @@
           centered = null;
         }
 
-  g.selectAll("path")
+  svg.selectAll("path")
       .classed("active", centered && function(d) { return d === centered; });
 
-  g.transition()
-      .duration(750)
+  svg.transition()
+      .duration(50)
       .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
       .style("stroke-width", 1.5 / k + "px");
 }
