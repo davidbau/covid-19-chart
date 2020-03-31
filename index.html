@@ -777,10 +777,11 @@ theapp = new Vue({
              ).split(';').indexOf(app.added_locality) < 0) {
           if (!app.chosen_include) {
             app.chosen_top = '0';
-            app.chosen_include = app.added_locality;
-          } else {
-            app.chosen_include = app.chosen_include + ';' + app.added_locality;
+            app.chosen_include = app.chosen_select;
+            app.chosen_select = '';
           }
+          app.chosen_include = (app.chosen_include ? app.chosen_include + ';'
+              : '') + app.added_locality;
           app.draw_chart();
         }
         app.added_locality = '';
