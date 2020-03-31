@@ -89,6 +89,13 @@
 		 .attr("height", height)
 		 .style("margin", "-15px auto");
 
+    svg.append("rect")
+            .attr("class", "background")
+            .attr("width", width)
+            .attr("height", height)
+            .on("click", clicked);
+
+
     var g = svg.append("g");
 
 
@@ -202,12 +209,6 @@
           k = 1;
           centered = null;
         }
-  svg.append("rect")
-         .attr("class", "background")
-         .attr("width", width)
-         .attr("height", height)
-         .on("click", clicked);
-
 
   g.selectAll("path")
       .classed("active", centered && function(d) { return d === centered; });
