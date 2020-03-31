@@ -89,12 +89,7 @@
 		 .attr("height", height)
 		 .style("margin", "-15px auto");
 
-    svg.append("rect")
-     .attr("class", "background")
-     .attr("width", width)
-     .attr("height", height)
-     .on("click", clicked);
-
+    var g = svg.append("g");
 
 
 		queue()
@@ -127,7 +122,8 @@
 		 pairCaseWithId[d.id] = +d.cases;
 		 pairNameWithId[d.id] = d.city;
 		 });
-		 svg.append("g")
+
+		g.append("g")
   		 .attr("class", "county")
   		 .selectAll("path")
   		   .data(topojson.feature(us, us.objects.counties).features)
@@ -192,13 +188,13 @@
 		 .text(function(){return legend_title});
 
      function clicked(d) {
-        var x, y, k;
+        var x, y;
 
         if (d && centered !== d) {
           var centroid = path.centroid(d);
           x = centroid[0];
           y = centroid[1];
-          k = 4;
+          k = 5;
           centered = d;
         } else {
           x = width / 2;
@@ -206,12 +202,18 @@
           k = 1;
           centered = null;
         }
+  svg.append("rect")
+         .attr("class", "background")
+         .attr("width", width)
+         .attr("height", height)
+         .on("click", clicked);
 
-  svg.selectAll("path")
+
+  g.selectAll("path")
       .classed("active", centered && function(d) { return d === centered; });
 
-  svg.transition()
-      .duration(50)
+  g.transition()
+      .duration(250)
       .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
       .style("stroke-width", 1.5 / k + "px");
 }
