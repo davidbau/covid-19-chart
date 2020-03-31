@@ -341,6 +341,7 @@ function get_multi_local_data(csse, field, localities) {
     requested_state = _.filter(localities, (s) => !!USA_STATES[s]).length > 0;
   function keys_for_row(country, state, admin, fips) {
     var keys = [];
+    country = norm_ctry(country);
     if (requested[country]) { keys.push(country); }
     if (requested_state && country == 'US' && state) {
       var abbrev = (USA_ABBREV[state] || state.match(/[A-Z]{2}$/) || '') + '';
