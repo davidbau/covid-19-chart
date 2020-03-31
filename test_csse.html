@@ -10,7 +10,7 @@
 </pre>
 <script>
 var csse = null;
-load_csse_data((d) => {
+load_csse_data().then(d => {
   csse = d;
   // document.querySelector('pre').innerText = JSON.stringify(d, null, 1);
   document.querySelector('pre').innerText = 'Loaded csse with ' +

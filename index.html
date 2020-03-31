@@ -39,8 +39,8 @@ chartist = Chartist; jquery = $; // Tooltip plugin needs these.
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
-<script src="lib/load_csse.js?v=2"></script> <!-- JHU CSSE loader -->
-<script src="lib/load_cds.js"></script> <!-- JHU CSSE loader -->
+<script src="lib/load_csse.js?v=3"></script> <!-- JHU CSSE loader -->
+<script src="lib/load_cds.js?v=2"></script> <!-- JHU CSSE loader -->
 <script src="lib/utils.js"></script> <!-- Date and csv utilities -->
 <script src="lib/usa_state_list.js"></script> <!-- translating abbrevs -->
 <script src="lib/fips_counties.js"></script>
@@ -867,7 +867,7 @@ function score_series(stat, s) {
 createCssStyles();
 
 load_feed_data = (data_feed_name == 'cds' ? load_cds_data : load_csse_data);
-load_feed_data((d) => {
+load_feed_data().then(d => {
   csse = d;
   theapp.csse = d;
   theapp.available_localities = all_localities(d);

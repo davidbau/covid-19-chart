@@ -12,7 +12,7 @@
 </pre>
 <script>
 var cds = null;
-load_cds_data((d) => {
+load_cds_data().then(d => {
   cds = d;
   // document.querySelector('pre').innerText = JSON.stringify(d, null, 1);
   document.querySelector('pre').innerText = 'use the console to see cds var.';
