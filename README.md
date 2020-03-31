@@ -38,9 +38,11 @@ created by directly using the URL API.
 * `series`: confirmed or deaths.
 * `stat`: totals or deltas.
 * `scale`: linear or log10.
+* `norm`: none or first (normalized by first day).
 * `start`: a date or >= expression as in the menu.
 * `top`: integer how how many top states or countries to include.
-* `include`: semicolon-separated list of states or countries to include.
+* `include`: semicolon-separated list of counties/states/countries to include.
+* `select`: semicolon-separated list of localities to highlight in graph.
 * `theme`: dark, white, or paper, to match your dashboard.
 * `advanced`: show a simple form for customizing the graph.
 * `bare`: set to 1 to show just the chart (e.g., for embedding).
