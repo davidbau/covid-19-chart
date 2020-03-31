@@ -146,7 +146,7 @@ Hover on points for specific numbers.
  placeholder="Find a different county, state, or country"
 :filter-by-query="true" v-model="added_locality"
 @select="add_locality()"></vue-simple-suggest
-><button v-on:click="reset_include()">Reset</button>
+><button v-on:click="reset">Reset</button>
 </div>
 </div>
 </form
@@ -763,9 +763,12 @@ theapp = new Vue({
       printwindow.onafterprint = function() { printwindow.close() };
       setTimeout(function() { printwindow.print(); }, 1200);
     },
-    reset_include: function() {
-      this.chosen_include = null;
+    reset: function(e) {
+      this.chosen_include = '';
+      this.chosen_select = '';
       this.chosen_top = '10';
+      this.chosen_norm = 'none'; // The only 'non-advanced' ui to reset this.
+      e.preventDefault();
     },
     add_locality: function() {
       var app = this;
