@@ -580,11 +580,13 @@ var styleNodes = [];
 var currentLocalityToColorIndex = {}
 
 //////////////////////////////////////////////////////////////////////
-// Dynamically create all styles, to make sure the ones from the chart
-// and from the legend match.
+// Reorder the series to attempt to keep colors stable compared
+// to the previously displayed chart
 //////////////////////////////////////////////////////////////////////
-function createCssStyles(localities) {
-  // Make use of the previous mapping, and start a new one for ths round
+function reorderSeriesForColorStability(series) {
+  var localities = _.map(series, entry => entry[0]);
+
+  // Make use of the previous mapping, and start a new one for this round
   var previousLocalityToColorIndex = currentLocalityToColorIndex;
   currentLocalityToColorIndex = {}
 
@@ -592,11 +594,14 @@ function createCssStyles(localities) {
   var colorIndicesInUse = {}
 
   // Pass 1: for any current locality that was in the previous list, reuse
-  // its color and mark that color index as in-use
+  // its color and mark that color index as in-use. However, if the color
+  // index is higher than the total number of localities we're about to
+  // display, discard it
   for (var i = 0; i < localities.length; i++) {
     var locality = localities[i];
 
-    if (previousLocalityToColorIndex[locality] !== undefined) {
+    if (previousLocalityToColorIndex[locality] !== undefined
+        && previousLocalityToColorIndex[locality] < localities.length) {
       currentLocalityToColorIndex[locality] = previousLocalityToColorIndex[locality];
       colorIndicesInUse[currentLocalityToColorIndex[locality]] = true;
     }
@@ -607,7 +612,8 @@ function createCssStyles(localities) {
   for (var i = 0, colorIndex = 0; i < localities.length; i++) {
     var locality = localities[i];
 
-    if (previousLocalityToColorIndex[locality] === undefined) {
+    if (previousLocalityToColorIndex[locality] === undefined
+        || previousLocalityToColorIndex[locality] >= localities.length) {
       // Skip any color indices that were used in pass 1
       while (colorIndicesInUse[colorIndex]) colorIndex++;
 
@@ -615,19 +621,18 @@ function createCssStyles(localities) {
     }
   }
 
-  // Here, currentLocalityToColorIndex has a color index for each locality in the chart
+  // Reorder the series so that each locality lands at the index that
+  // matches its color
+  return series.sort((s1, s2) =>
+    currentLocalityToColorIndex[s1[0]] - currentLocalityToColorIndex[s2[0]]);
+}
 
-  var documentHead = document.getElementsByTagName('head')[0];
-
-  // Delete all style nodes to avoid accumulation, and reset the list
-  _.forEach(styleNodes, node => documentHead.removeChild(node));
-  styleNodes = [];
-
-  for (var i = 0, colorIndex = 0; i < localities.length && i < 26; i++) {
-    var colorIndex = currentLocalityToColorIndex[localities[i]] % colors.length;
-
-    var color = colors[colorIndex];
-
+//////////////////////////////////////////////////////////////////////
+// Dynamically create all styles, to make sure the ones from the chart
+// and from the legend match
+//////////////////////////////////////////////////////////////////////
+function createCssStyles() {
+  for(var i=0; i < colors.length; i++) {
     // Using style injection technique from
     // https://stackoverflow.com/a/1720483/111888
     var style = document.createElement('style');
@@ -640,13 +645,12 @@ function createCssStyles(localities) {
       .ct-legend .ct-series-${i}:before,
       .ct-series-${String.fromCharCode(97+i)} .ct-line,
       .ct-series-${String.fromCharCode(97+i)} .ct-point {
-        background-color: ${color};
-        border-color: ${color};
-        stroke: ${color}
+        background-color: ${colors[i]};
+        border-color: ${colors[i]};
+        stroke: ${colors[i]}
       }`;
 
-    styleNodes.push(style); // Keep track of it for cleanup purposes
-    documentHead.appendChild(style);
+    document.getElementsByTagName('head')[0].appendChild(style);
   }
 }
 
@@ -689,7 +693,9 @@ theapp = new Vue({
       var data = extract_data(this.csse, this.chosen_domain,
           this.chosen_series, this.chosen_stat,
           this.chosen_top, this.chosen_include);
-      createCssStyles(_.map(data.series, entry => entry[0]));
+      if (data.series) {
+        data.series = reorderSeriesForColorStability(data.series);
+      }
       return data;
     },
     chosen_domain: url_property('domain', 'US'),
@@ -831,6 +837,8 @@ function score_series(stat, s) {
 // Initialization.
 // Load the csse data, and then tell the vue app to draw the chart.
 //////////////////////////////////////////////////////////////////////
+
+createCssStyles();
 
 load_feed_data = (data_feed_name == 'cds' ? load_cds_data : load_csse_data);
 load_feed_data((d) => {
