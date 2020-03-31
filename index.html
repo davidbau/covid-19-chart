@@ -602,7 +602,8 @@ function reorderSeriesForColorStability(series) {
 
     if (previousLocalityToColorIndex[locality] !== undefined
         && previousLocalityToColorIndex[locality] < localities.length) {
-      currentLocalityToColorIndex[locality] = previousLocalityToColorIndex[locality];
+      currentLocalityToColorIndex[locality] =
+          previousLocalityToColorIndex[locality];
       colorIndicesInUse[currentLocalityToColorIndex[locality]] = true;
     }
   }
@@ -693,9 +694,6 @@ theapp = new Vue({
       var data = extract_data(this.csse, this.chosen_domain,
           this.chosen_series, this.chosen_stat,
           this.chosen_top, this.chosen_include);
-      if (data.series) {
-        data.series = reorderSeriesForColorStability(data.series);
-      }
       return data;
     },
     chosen_domain: url_property('domain', 'US'),
@@ -721,12 +719,15 @@ theapp = new Vue({
       if (!allowable_start_rule(extract, this.chosen_start)) {
         this.chosen_start = this.start_choices[0];
       }
-      var shifted_extract = apply_start_rule(this.chosen_start, extract);
+      var shifted = apply_start_rule(this.chosen_start, extract);
+      var ordered = _.defaults({
+        series: reorderSeriesForColorStability(shifted.series)
+      }, shifted);
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale);
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
-      plot_series(shifted_extract, this.chosen_stat, this.chosen_scale,
+      plot_series(ordered, this.chosen_stat, this.chosen_scale,
           xtitle, ytitle,
           this.chosen_select,
           s => { this.chosen_select = s; });
