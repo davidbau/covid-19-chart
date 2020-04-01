@@ -672,6 +672,11 @@ function createCssStyles() {
         border-color: ${colors[i]};
         stroke: ${colors[i]};
       }
+      .ct-chart:not(.ct-hover) .ct-legend .ct-series-${i},
+      .ct-chart:not(.ct-hover) .ct-series-${String.fromCharCode(97+i)} {
+        opacity: 1.0;
+        transition: opacity 1s linear;
+      }
       .ct-hover:not(.ct-hover-on-${i}) .ct-legend .ct-series-${i} {
         opacity: 0.5;
       }
