@@ -39,8 +39,8 @@ chartist = Chartist; jquery = $; // Tooltip plugin needs these.
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
-<script src="lib/load_csse.js?v=2"></script> <!-- JHU CSSE loader -->
-<script src="lib/load_cds.js"></script> <!-- JHU CSSE loader -->
+<script src="lib/load_csse.js?v=4"></script> <!-- JHU CSSE loader -->
+<script src="lib/load_cds.js?v=2"></script> <!-- JHU CSSE loader -->
 <script src="lib/utils.js"></script> <!-- Date and csv utilities -->
 <script src="lib/usa_state_list.js"></script> <!-- translating abbrevs -->
 <script src="lib/fips_counties.js"></script>
@@ -146,7 +146,7 @@ Hover on points for specific numbers.
  placeholder="Find a different county, state, or country"
 :filter-by-query="true" v-model="added_locality"
 @select="add_locality()"></vue-simple-suggest
-><button v-on:click="reset_include()">Reset</button>
+><button v-on:click="reset">Reset</button>
 </div>
 </div>
 </form
@@ -161,9 +161,11 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td>Series:</td><td><input v-model.lazy="chosen_series"> (confirmed/deaths)</td></tr>
 <tr><td>Stat:</td><td><input v-model.lazy="chosen_stat"> (totals/deltas)</td></tr>
 <tr><td>Scale:</td><td><input v-model.lazy="chosen_scale"> (linear/log10)</td></tr>
+<tr><td>Norm:</td><td><input v-model.lazy="chosen_norm"> (none/first)</td></tr>
 <tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=num, or m/d/y)</td></tr>
 <tr><td>Top:</td><td><input v-model.lazy="chosen_top"> (integer)</td></tr>
 <tr><td>Include:</td><td><input v-model.lazy="chosen_include"> (';' between states)</td></tr>
+<tr><td>Select:</td><td><input v-model.lazy="chosen_select"> (';' between states)</td></tr>
 <tr><td>Theme:</td><td><input v-model.lazy="chosen_theme"> (white/dark/paper)</td></tr>
 <tr><td>Advanced:</td><td> <input v-model.lazy="chosen_advanced"> (1 or 0)</td></tr>
 <tr><td>Bare:</td><td> <input v-model.lazy="chosen_bare"> (1 or 0)</td></tr>
@@ -193,7 +195,7 @@ Select the logarithmic totals with a &gt;=100 starting threshold, so that day ze
 Open source.
 (<a href="https://en.wikipedia.org/wiki/MIT_License">MIT license</a>.)
 Thanks to the support of <a href="https://quest.mit.edu/">MIT Quest</a>.
-Seeking Vue.js+D3 people to help improve the site.
+Seeking Vue.js+D3 people to help improve this resource.
 <address>- <a href="http://davidbau.com/">David Bau</a></address>
 </div></div></body>
 <!--
@@ -339,6 +341,7 @@ function get_multi_local_data(csse, field, localities) {
     requested_state = _.filter(localities, (s) => !!USA_STATES[s]).length > 0;
   function keys_for_row(country, state, admin, fips) {
     var keys = [];
+    country = norm_ctry(country);
     if (requested[country]) { keys.push(country); }
     if (requested_state && country == 'US' && state) {
       var abbrev = (USA_ABBREV[state] || state.match(/[A-Z]{2}$/) || '') + '';
@@ -349,6 +352,24 @@ function get_multi_local_data(csse, field, localities) {
   var dates, rollup;
   [dates, rollup] = rollup_multi_ts(csse[field], keys_for_row);
   return { dates: dates, seriesmap: rollup };
+}
+
+//////////////////////////////////////////////////////////////////////
+// Normalization.
+//////////////////////////////////////////////////////////////////////
+function apply_norm_rule(rule, extracted) {
+  if (rule == 'none') { return extracted; }
+  if (rule == 'first') {
+    extracted.series = extracted.series.map(s => {
+      var first_pos_val = s[1].filter(d => d.value > 0)[0].value || 1;
+      return [s[0], s[1].map(
+          d => d && _.defaults({
+            meta: d.meta + ' (' + d.value + ')',
+            value: d.value / first_pos_val
+          }, d))];
+    });
+  }
+  return extracted;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -367,7 +388,7 @@ function available_start_rules(extracted) {
   var other_d = dates.slice(1).filter(x => !!/^\d+\/1\/\d+$/.exec(x));
   var third_v = _.sortBy(data_series.map(
       x => _.max(x[1].map(x => x.value))), x => -x)[2];
-  var gt_rules = [10, 30, 100, 300, 1000].filter(
+  var gt_rules = [10, 30, 80, 100, 300, 1000].filter(
       x => (x < third_v)).map(x => '>=' + x);
   return _.concat([first_d], other_d, gt_rules);
 }
@@ -465,9 +486,10 @@ function extract_data(csse, domain, field, stat, topcount, include) {
     series: described_series
   };
 }
-function yaxis_title(field, stat, scale) {
+function yaxis_title(field, stat, scale, norm) {
   var desc = {totals: 'Total cumulative ', deltas: 'Daily new '}[stat] +
              {confirmed: 'confirmed cases', deaths: 'deaths'}[field] +
+             {first: ', / first day', 'none': ''}[norm] +
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
 }
@@ -484,7 +506,7 @@ function xaxis_title(field, start) {
 // The extract data is plotted using chartist.js,
 // using the given scale.
 //////////////////////////////////////////////////////////////////////
-function plot_series(extract, stat, scale, xaxis, yaxis) {
+function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
   if (stat == 'deltas') {
@@ -550,9 +572,10 @@ function plot_series(extract, stat, scale, xaxis, yaxis) {
       // Must be last to not intefere with axis titles.
       Chartist.plugins.legend({
         legendNames: extract.series.map(x => x[0]),
-        legendState: theapp.legendStates[theapp.chosen_domain],
+        legendState: !select ? [] : select.split(';'),
         onClick: function(chart, e, legends) {
-          theapp.legendStates[theapp.chosen_domain] = legends;
+          // Persist the state, and remember what domain it's for
+          updateSelect(legends.join(';'));
         },
       }),
       Chartist.plugins.ctPointLabels({
@@ -570,6 +593,61 @@ var colors = [
   "#6b0392", "#dda458", "#eacf7d", "#86797d", "#b2c326", "#6188e2", "#a748ca",
   "#a7f432", "#a83731", "#af6e4d", "#ff007c", "#fcd667", "#bfafb2", "#c46210",
   "#4a646c", "#a6e7ff", "#ffd0b9", "#45a27d", "#3aa8c1"];
+
+// List of style elements we have created
+var styleNodes = [];
+
+// The current mapping from locality name to color index
+var currentLocalityToColorIndex = {}
+
+//////////////////////////////////////////////////////////////////////
+// Reorder the series to attempt to keep colors stable compared
+// to the previously displayed chart
+//////////////////////////////////////////////////////////////////////
+function reorderSeriesForColorStability(series) {
+  var localities = _.map(series, entry => entry[0]);
+
+  // Make use of the previous mapping, and start a new one for this round
+  var previousLocalityToColorIndex = currentLocalityToColorIndex;
+  currentLocalityToColorIndex = {}
+
+  // Keep track of color indices used in phase 1, to avoid them in phase 2
+  var colorIndicesInUse = {}
+
+  // Pass 1: for any current locality that was in the previous list, reuse
+  // its color and mark that color index as in-use. However, if the color
+  // index is higher than the total number of localities we're about to
+  // display, discard it
+  for (var i = 0; i < localities.length; i++) {
+    var locality = localities[i];
+
+    if (previousLocalityToColorIndex[locality] !== undefined
+        && previousLocalityToColorIndex[locality] < localities.length) {
+      currentLocalityToColorIndex[locality] =
+          previousLocalityToColorIndex[locality];
+      colorIndicesInUse[currentLocalityToColorIndex[locality]] = true;
+    }
+  }
+
+  // Pass 2: for any current locality that was *not* in the previous list,
+  // assign it the next available color index
+  for (var i = 0, colorIndex = 0; i < localities.length; i++) {
+    var locality = localities[i];
+
+    if (previousLocalityToColorIndex[locality] === undefined
+        || previousLocalityToColorIndex[locality] >= localities.length) {
+      // Skip any color indices that were used in pass 1
+      while (colorIndicesInUse[colorIndex]) colorIndex++;
+
+      currentLocalityToColorIndex[locality] = colorIndex++;
+    }
+  }
+
+  // Reorder the series so that each locality lands at the index that
+  // matches its color
+  return series.sort((s1, s2) =>
+    currentLocalityToColorIndex[s1[0]] - currentLocalityToColorIndex[s2[0]]);
+}
 
 //////////////////////////////////////////////////////////////////////
 // Dynamically create all styles, to make sure the ones from the chart
@@ -616,14 +694,14 @@ theapp = new Vue({
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
     added_locality: null,
-    legendStates: []    // Legend state is saved separately for each domain
+    selectStateDomain: null // The domain that the saved state is for
   },
   updated: function() {
     this.configure_suggest();
   },
   computed: {
     start_choices: function() {
-      if (this.csse == null) { return ['1/1/20', '>=30', '>=1000']; }
+      if (this.csse == null) { return ['1/1/20', '>=80', '>=1000']; }
       var extract = this.extracted_data;
       var choices = available_start_rules(extract);
       if (this.chosen_start && choices.indexOf(this.chosen_start) < 0) {
@@ -642,9 +720,11 @@ theapp = new Vue({
     chosen_series: url_property('series', 'confirmed'),
     chosen_stat: url_property('stat', 'totals'),
     chosen_scale: url_property('scale', 'log10'),
-    chosen_start: url_property('start', '>=30'),
+    chosen_norm: url_property('norm', 'none'),
+    chosen_start: url_property('start', '>=80'),
     chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
+    chosen_select: url_property('select', ''),
     chosen_theme: url_property('theme', 'paper'),
     chosen_bare: url_property('bare', '0', true),
     chosen_advanced: url_property('advanced', '0'),
@@ -660,13 +740,19 @@ theapp = new Vue({
       if (!allowable_start_rule(extract, this.chosen_start)) {
         this.chosen_start = this.start_choices[0];
       }
-      var shifted_extract = apply_start_rule(this.chosen_start, extract);
+      var shifted = apply_start_rule(this.chosen_start, extract);
+      var normalized = apply_norm_rule(this.chosen_norm, shifted);
+      var ordered = _.defaults({
+        series: reorderSeriesForColorStability(normalized.series)
+      }, shifted);
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
-          this.chosen_scale);
+          this.chosen_scale, this.chosen_norm);
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
-      plot_series(shifted_extract, this.chosen_stat, this.chosen_scale,
-          xtitle, ytitle);
+      plot_series(ordered, this.chosen_stat, this.chosen_scale,
+          xtitle, ytitle,
+          this.chosen_select,
+          s => { this.chosen_select = s; });
     }, 100),
     make_url: function(opts) {
       return this.siteurl + this.$router.resolve(
@@ -677,9 +763,12 @@ theapp = new Vue({
       printwindow.onafterprint = function() { printwindow.close() };
       setTimeout(function() { printwindow.print(); }, 1200);
     },
-    reset_include: function() {
-      this.chosen_include = null;
+    reset: function(e) {
+      this.chosen_include = '';
+      this.chosen_select = '';
       this.chosen_top = '10';
+      this.chosen_norm = 'none'; // The only 'non-advanced' ui to reset this.
+      e.preventDefault();
     },
     add_locality: function() {
       var app = this;
@@ -688,10 +777,11 @@ theapp = new Vue({
              ).split(';').indexOf(app.added_locality) < 0) {
           if (!app.chosen_include) {
             app.chosen_top = '0';
-            app.chosen_include = app.added_locality;
-          } else {
-            app.chosen_include = app.chosen_include + ';' + app.added_locality;
+            app.chosen_include = app.chosen_select;
+            app.chosen_select = '';
           }
+          app.chosen_include = (app.chosen_include ? app.chosen_include + ';'
+              : '') + app.added_locality;
           app.draw_chart();
         }
         app.added_locality = '';
@@ -749,8 +839,16 @@ function all_localities(csse) {
 function url_property(name, default_value, nav) {
   return {
     get() { return this.$route.query[name] || default_value },
-    set(value) { this.$router[nav ? 'push' : 'replace']({query: _.defaults(
-      { [name]: value }, this.$route.query) }).catch(err => {}); }
+    set(value) {
+      var o = _.defaults({ [name]: value }, this.$route.query);
+
+      // If it's the default value, get rid of it to clean up the URL
+      if (value == default_value) {
+        delete o[name];
+      }
+
+      this.$router[nav ? 'push' : 'replace']({query: o }).catch(err => {});
+    }
   };
 }
 function score_series(stat, s) {
@@ -770,7 +868,7 @@ function score_series(stat, s) {
 createCssStyles();
 
 load_feed_data = (data_feed_name == 'cds' ? load_cds_data : load_csse_data);
-load_feed_data((d) => {
+load_feed_data().then(d => {
   csse = d;
   theapp.csse = d;
   theapp.available_localities = all_localities(d);
@@ -778,6 +876,7 @@ load_feed_data((d) => {
 });
 
 </script>
+<script async>(u=>{u.searchParams.delete('fbclid');history.replaceState(null,'', u.href); })(new URL(location))</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-242212-3"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','UA-242212-3');</script>
 <!--
 Copyright (c) 2020 David Bau, open source and licensed for reuse

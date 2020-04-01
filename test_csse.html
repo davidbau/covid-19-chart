@@ -4,17 +4,20 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
 <script src="/lib/load_csse.js"></script>
 <script src="/lib/utils.js"></script>
+<script src="/lib/flatten.js"></script>
+<script src="/lib/usa_state_list.js"></script>
 </head>
 <body>
 <pre>
 </pre>
 <script>
-var csse = null;
-load_csse_data((d) => {
-  csse = d;
-  // document.querySelector('pre').innerText = JSON.stringify(d, null, 1);
-  document.querySelector('pre').innerText = 'Loaded csse with ' +
-    csse.confirmed.length + ' rows';
+// var csse = null;
+var flat = null;
+
+flatten_promise(load_csse_data()).then(d => {
+  document.querySelector('pre').innerText += 'Loaded flat with ' +
+    _.size(d) + ' localities\n';
+  flat = d;
 });
 </script>
 
