@@ -6,6 +6,12 @@
 	<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
 	<script type="text/javascript" src="https://d3js.org/queue.v1.min.js"></script>
 	<script type="text/javascript" src="https://d3js.org/topojson.v1.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.js" integrity="sha256-iAuxnf8Cwr0yrQkpf6oQG4PaL/oVmoer6V/RfX2KQws=" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
+	<script src="/lib/load_csse.js"></script>
+	<script src="/lib/utils.js"></script>
+	<script src="/lib/flatten.js"></script>
+	<script src="/lib/usa_state_list.js"></script>
 </head>
 
 <!-- CSS -->
@@ -69,6 +75,7 @@
 <body>
 	<h1>Confirmed Cases by County</h1>
 		 <script type="text/javascript">
+		 var flat_data = null;
 		 var width = 960, height = 600, centered;
 		 var color_domain = [10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 		 var ext_color_domain = [0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
@@ -94,12 +101,16 @@
 
 		queue()
 		 .defer(d3.json, "testdata/us.json")
-		 .defer(d3.csv, "testdata/county_dates.csv")
+		 .defer((cb) => { load_csse_data().then(d => { cb(null, d); }) })
 		 .await(ready);
 
-		function ready(error, us, data) {
+		function ready(error, us, all_data) {
 		 var pairCaseWithId = {};
 		 var pairNameWithId = {};
+		 flat_data = flatten_all(all_data);
+
+		 var data = last_day(flat_data).filter(d => !!d.fips);
+		_.forEach(data, d => { d.id = +d.fips; });
 
 		//Moves selction to front
 		d3.selection.prototype.moveToFront = function() {
@@ -119,9 +130,9 @@
 		};
 
 		data.forEach(function(d) {
-		 pairCaseWithId[d.id] = +d.cases;
-		 pairNameWithId[d.id] = d.city;
-		 });
+		 pairCaseWithId[d.id] = +d.confirmed;
+		 pairNameWithId[d.id] = d.county;
+		});
 
 		g.append("g")
   		 .attr("class", "county")

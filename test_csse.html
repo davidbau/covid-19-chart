@@ -14,7 +14,7 @@
 // var csse = null;
 var flat = null;
 
-flatten(load_csse_data()).then(d => {
+flatten_promise(load_csse_data()).then(d => {
   document.querySelector('pre').innerText += 'Loaded flat with ' +
     _.size(d) + ' localities\n';
   flat = d;
