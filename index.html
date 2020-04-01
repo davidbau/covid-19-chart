@@ -143,7 +143,7 @@ Hover on points for specific numbers.
 </select></nobr>
 <div class="searchline">
 <vue-simple-suggest :list="available_localities" ref="suggest"
- placeholder="Find a different county, state, or country"
+ placeholder="Pick your own localities, one at a time"
 :filter-by-query="true" v-model="added_locality"
 @select="add_locality()"></vue-simple-suggest
 ><button v-on:click="reset">Reset</button>
