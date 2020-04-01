@@ -146,7 +146,8 @@ Hover on points for specific numbers.
  placeholder="Pick your own localities, one at a time"
 :filter-by-query="true" v-model="added_locality"
 @select="add_locality()"></vue-simple-suggest
-><button v-on:click="reset">Reset</button>
+><button v-on:click="reset"><span v-if="!chosen_select">Reset</span
+><span v-else>Clean up</span></button>
 </div>
 </div>
 </form
@@ -764,21 +765,43 @@ theapp = new Vue({
       setTimeout(function() { printwindow.print(); }, 1200);
     },
     reset: function(e) {
-      this.chosen_include = '';
-      this.chosen_select = '';
-      this.chosen_top = '10';
-      this.chosen_norm = 'none'; // The only 'non-advanced' ui to reset this.
+      // The reset button does two different things.  It resets
+      // to the default view (top-10 localities); but if there is
+      // a legend selection, it also cleans up the graph to focus
+      // on just the selected items.
+      if (!this.chosen_select) {
+        // If there is no legend selection, reset to default view
+        this.chosen_include = '';
+        this.chosen_select = '';
+        this.chosen_top = '10';
+        this.chosen_norm = 'none'; // The only 'non-advanced' ui to reset this.
+      } else {
+        // If there is a selection, erase the unselected items.
+        this.chosen_include = this.chosen_select;
+        this.chosen_select = '';
+        this.chosen_top = '0';
+      }
       e.preventDefault();
     },
     add_locality: function() {
+      // When a new locality is added, there are a few different cases.
+      // 1. If it's the first added, and there are no prior selections,
+      //    it is added and made the only selection, so the user
+      //    can see the added line, but also 10 empty buttons for other
+      //    localities that can be clicked back in easily.
+      // 2. If there is already a selection, we make sure it's included
+      //    and added to the selection so the new line is visible.
+      // 3. If it's not the first added but no selection, we keep
+      //    everything visible by not changing the selection.
       var app = this;
       setTimeout(function() {
         if (app.added_locality && (app.chosen_include || ''
              ).split(';').indexOf(app.added_locality) < 0) {
-          if (!app.chosen_include) {
-            app.chosen_top = '0';
-            app.chosen_include = app.chosen_select;
-            app.chosen_select = '';
+          if (!app.chosen_include || !!app.chosen_select) {
+            // Add a focus on this locality if it's the first
+            // added include or if there is already a selective focus
+            app.chosen_select = (app.chosen_select ? app.chosen_select + ';'
+              : '') + app.added_locality;
           }
           app.chosen_include = (app.chosen_include ? app.chosen_include + ';'
               : '') + app.added_locality;
