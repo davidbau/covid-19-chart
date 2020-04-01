@@ -795,16 +795,17 @@ theapp = new Vue({
       //    everything visible by not changing the selection.
       var app = this;
       setTimeout(function() {
-        if (app.added_locality && (app.chosen_include || ''
-             ).split(';').indexOf(app.added_locality) < 0) {
+        if (app.added_locality && !in_semilist(app.chosen_include,
+             app.added_locality)) {
           if (!app.chosen_include || !!app.chosen_select) {
             // Add a focus on this locality if it's the first
             // added include or if there is already a selective focus
-            app.chosen_select = (app.chosen_select ? app.chosen_select + ';'
-              : '') + app.added_locality;
+            app.chosen_select = add_to_semilist(app.chosen_select,
+                app.added_locality);
           }
-          app.chosen_include = (app.chosen_include ? app.chosen_include + ';'
-              : '') + app.added_locality;
+          // Make sure the searched locality is included.
+          app.chosen_include = add_to_semilist(app.chosen_include,
+              app.added_locality);
           app.draw_chart();
         }
         app.added_locality = '';
@@ -881,6 +882,15 @@ function score_series(stat, s) {
   } else {
     return _.sum(s.slice(-3)) / (1e-10 + s.slice(-3).length);
   }
+}
+function in_semilist(semilist, item) {
+  return (semilist || '').split(';').indexOf(item) >= 0;
+}
+function add_to_semilist(semilist, item) {
+  if (!!item && !in_semilist(semilist, item)) {
+    semilist = (semilist ? semilist + ';' + item : item);
+  }
+  return semilist;
 }
 
 //////////////////////////////////////////////////////////////////////
