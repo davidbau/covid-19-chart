@@ -670,9 +670,22 @@ function createCssStyles() {
       .ct-series-${String.fromCharCode(97+i)} .ct-point {
         background-color: ${colors[i]};
         border-color: ${colors[i]};
-        stroke: ${colors[i]}
+        stroke: ${colors[i]};
+      }
+      .ct-hover:not(.ct-hover-on-${i}) .ct-legend .ct-series-${i} {
+        opacity: 0.5;
+      }
+      .ct-hover:not(.ct-hover-on-${i}) .ct-series-${String.fromCharCode(97+i)} {
+        opacity: 0.1;
+      }
+      .ct-hover.ct-hover-on-${i} .ct-series-${String.fromCharCode(97+i)} {
+        z-index: 10;
+      }
+      .ct-hover.ct-hover-on-${i}
+          .ct-series.ct-series-${String.fromCharCode(97+i)} text.ct-label {
+        fill: #000;
+        font-weight: bold;
       }`;
-
     document.getElementsByTagName('head')[0].appendChild(style);
   }
 }
@@ -892,6 +905,13 @@ function add_to_semilist(semilist, item) {
   }
   return semilist;
 }
+
+$('body').on('mouseenter mouseleave', '.ct-chart .ct-legend li', (e) => {
+  var hc = $(e.target).prop('class').replace('ct-series', 'ct-hover-on');
+  var inactive = $(e.target).closest('.inactive').length > 0;
+  $(e.target).closest('.ct-chart').toggleClass(
+      'ct-hover ' + hc, e.type == 'mouseenter' && !inactive);
+});
 
 //////////////////////////////////////////////////////////////////////
 // Initialization.
