@@ -479,7 +479,6 @@ function extract_data(csse, domain, field, stat, topcount, include) {
   var localities = (domain == 'Intl' ?  all_countries(csse[field]) :
         domain == 'US' ?  _.keys(USA_STATES) :
         all_localities.filter(c => c.endsWith(', ' + domain)));
-  console.log(localities);
   var state_series = _.mapValues(
       get_multi_local_data(csse, field, localities).seriesmap,
       v => v.slice(first_nz));
