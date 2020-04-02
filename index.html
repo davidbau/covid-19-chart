@@ -208,7 +208,7 @@ Seeking Vue.js+D3 people to help improve this resource.
 //////////////////////////////////////////////////////////////////////
 // Globals - exposing these globals is useful for debugging.
 //////////////////////////////////////////////////////////////////////
-var data_feed_name = location.href.indexOf('feed=cds') < 0 ? 'csse' : 'cds';
+var data_feed_name = location.href.indexOf('feed=csse') < 0 ? 'cds' : 'csse';
 var csse = null,   // Cleaned data loaded from csse.
     chart = null,  // The main object, Chartist object.
     theapp = null, // Main application controller, Vue object.
