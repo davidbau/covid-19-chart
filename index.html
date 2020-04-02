@@ -910,11 +910,19 @@ function add_to_semilist(semilist, item) {
   return semilist;
 }
 
-$('body').on('mouseenter mouseleave', '.ct-chart .ct-legend li', (e) => {
+function clear_hover_classes(element) {
+  $(element).removeClass($(element).prop('class').split(/\s+/).filter(
+      c => c.startsWith('ct-hover')).join(' '));
+}
+$('body').on('mouseleave mousedown', '.ct-chart .ct-legend li', (e) => {
+  clear_hover_classes($(e.target).closest('.ct-chart'));
+});
+$('body').on('mouseenter', '.ct-chart .ct-legend li', (e) => {
   var hc = $(e.target).prop('class').replace('ct-series', 'ct-hover-on');
   var inactive = $(e.target).closest('.inactive').length > 0;
-  $(e.target).closest('.ct-chart').toggleClass(
-      'ct-hover ' + hc, e.type == 'mouseenter' && !inactive);
+  if (!inactive) {
+    $(e.target).closest('.ct-chart').addClass('ct-hover ' + hc);
+  }
 });
 
 //////////////////////////////////////////////////////////////////////
