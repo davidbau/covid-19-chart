@@ -493,7 +493,7 @@ function extract_data(csse, domain, field, stat, topcount, include) {
       top_states.push([inc, extra])
     }
   }
-  if (domain != 'Intl' && parseInt(topcount)) {
+  if (domain == 'US' && parseInt(topcount)) {
     top_states.unshift([domain, global_series]);
   }
   var described_series = top_states.map(p => [p[0], p[1].map((x, i) =>
