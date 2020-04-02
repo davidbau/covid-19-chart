@@ -41,6 +41,7 @@ chartist = Chartist; jquery = $; // Tooltip plugin needs these.
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
 <script src="lib/load_csse.js?v=4"></script> <!-- JHU CSSE loader -->
 <script src="lib/load_cds.js?v=2"></script> <!-- JHU CSSE loader -->
+<script src="lib/population.js"></script> <!-- population per region -->
 <script src="lib/utils.js"></script> <!-- Date and csv utilities -->
 <script src="lib/usa_state_list.js"></script> <!-- translating abbrevs -->
 <script src="lib/fips_counties.js"></script>
@@ -367,6 +368,16 @@ function apply_norm_rule(rule, extracted) {
           d => d && _.defaults({
             meta: d.meta + ' (' + d.value + ')',
             value: d.value / first_pos_val
+          }, d))];
+    });
+  }
+  if (rule == 'permillion') {
+    extracted.series = extracted.series.map(s => {
+      var pop_val = s[0] in POPULATION ? POPULATION[s[0]] : 1000000;
+      return [s[0], s[1].map(
+          d => d && _.defaults({
+            meta: d.meta + ' (' + d.value + ')',
+            value: d.value * 1000000 / pop_val
           }, d))];
     });
   }
