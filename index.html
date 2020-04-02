@@ -24,17 +24,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.1.3/vue-router.min.js" integrity="sha256-r/vPIUvTobCpYZsMmvU7HM58cNd4D6/vdICqDFapV7Y=" crossorigin="anonymous"></script>
 <script>
 process = null; // process variable is needed by simple-suggest.
-chartist = Chartist; jquery = $; // Tooltip plugin needs these.
 </script>
 <script src="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/iife.js" integrity="sha256-06eSh+iu/R5lRkwjJYl1Kddxg3EFmK4F2b9dWrVYEi4=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/styles.css" integrity="sha256-50OeaRwCtPG/05g4KvaNeZZQEU95DqVIuqAZTx+GXHA=" crossorigin="anonymous">
 <script>
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-axistitle@0.0.7/dist/chartist-plugin-axistitle.min.js" integrity="sha256-prApUlf6GL5TScu+1fzXL6UDmTFLl9v2Bsk57h4zlK8=" crossorigin="anonymous"></script>
 <!--
   Customized dependencies.
 -->
+<script src="lib/chartist-plugin-tooltip.js"></script> <!-- single label -->
 <script src="lib/chartist-plugin-pointlabels.js"></script> <!-- single label -->
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
