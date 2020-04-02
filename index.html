@@ -24,22 +24,21 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue-router/3.1.3/vue-router.min.js" integrity="sha256-r/vPIUvTobCpYZsMmvU7HM58cNd4D6/vdICqDFapV7Y=" crossorigin="anonymous"></script>
 <script>
 process = null; // process variable is needed by simple-suggest.
-chartist = Chartist; jquery = $; // Tooltip plugin needs these.
 </script>
 <script src="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/iife.js" integrity="sha256-06eSh+iu/R5lRkwjJYl1Kddxg3EFmK4F2b9dWrVYEi4=" crossorigin="anonymous"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-simple-suggest@1.10.1/dist/styles.css" integrity="sha256-50OeaRwCtPG/05g4KvaNeZZQEU95DqVIuqAZTx+GXHA=" crossorigin="anonymous">
 <script>
 </script>
-<script src="https://cdn.jsdelivr.net/npm/chartist-plugin-tooltip@0.0.11/chartist-plugin-tooltip.js" integrity="sha256-ngO2WQ2lK5livpEUubW2qbfre03s8rHixhMguuXbaAs=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartist-plugin-axistitle@0.0.7/dist/chartist-plugin-axistitle.min.js" integrity="sha256-prApUlf6GL5TScu+1fzXL6UDmTFLl9v2Bsk57h4zlK8=" crossorigin="anonymous"></script>
 <!--
   Customized dependencies.
 -->
+<script src="lib/chartist-plugin-tooltip.js"></script> <!-- single label -->
 <script src="lib/chartist-plugin-pointlabels.js"></script> <!-- single label -->
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
-<script src="lib/load_csse.js?v=4"></script> <!-- JHU CSSE loader -->
+<script src="lib/load_csse.js?v=5"></script> <!-- JHU CSSE loader -->
 <script src="lib/load_cds.js?v=2"></script> <!-- JHU CSSE loader -->
 <script src="lib/utils.js"></script> <!-- Date and csv utilities -->
 <script src="lib/usa_state_list.js"></script> <!-- translating abbrevs -->
@@ -100,12 +99,15 @@ select { margin-top: 1px; margin-bottom: 1px; }
 <link rel="stylesheet"
  :href="'theme/' + chosen_theme.replace(/[^A-Za-z]/, '') + '.css'">
 <form class="pane-menu" autocomplete="none">
-<h1>{{ { US: 'USA', Intl: 'International' }[chosen_domain] }}
+<h1>{{ chosen_domain == 'US' ? 'USA' :
+       chosen_domain == 'Intl' ? 'International' : 'Local' }}
 COVID-19 <nobr>Chart <span v-if="chosen_advanced == '1'">API</span
 ><span v-else>Maker</span>
 <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:bottom;margin-bottom:2px;"></a></nobr></h1>
 <p><span v-if="parseInt(chosen_top) > 0">Stats on {{ chosen_top }}
-{{ { US: 'states', Intl: 'countries outside China'}[chosen_domain] }}
+{{ chosen_domain == 'US' ? 'states' :
+   chosen_domain == 'Intl' ? 'countries outside China' :
+   'localities in ' + chosen_domain }}
 with highest numbers.</span> Data are from
 <a v-if="data_feed_name == 'cds'"
 href="https://coronadatascraper.com/">coronadatascraper.com</a>
@@ -209,7 +211,8 @@ Seeking Vue.js+D3 people to help improve this resource.
 var data_feed_name = location.href.indexOf('feed=cds') < 0 ? 'csse' : 'cds';
 var csse = null,   // Cleaned data loaded from csse.
     chart = null,  // The main object, Chartist object.
-    theapp = null; // Main application controller, Vue object.
+    theapp = null, // Main application controller, Vue object.
+    all_localities = [];
 
 //////////////////////////////////////////////////////////////////////
 // By-day summarization.
@@ -286,6 +289,7 @@ function rollup_multi_ts(series, key_function) {
   return [ts_names, all_totals];
 }
 function norm_ctry(s) {
+  if (s && s.indexOf('*') >= 0) { s = s.replace('*', ''); }
   if (s == 'Korea, South') return 'S Korea';
   if (s == 'United Kingdom') return 'UK';
   return s;
@@ -338,15 +342,21 @@ function get_national_data(csse, field, chosen_country) {
   return { dates: dates, totals: totals }
 }
 function get_multi_local_data(csse, field, localities) {
-  var requested = _.zipObject(localities, _.fill(Array(localities.length), 1)),
-    requested_state = _.filter(localities, (s) => !!USA_STATES[s]).length > 0;
+  var requested = _.zipObject(localities, _.fill(Array(localities.length), 1));
   function keys_for_row(country, state, admin, fips) {
     var keys = [];
     country = norm_ctry(country);
     if (requested[country]) { keys.push(country); }
-    if (requested_state && country == 'US' && state) {
-      var abbrev = (USA_ABBREV[state] || state.match(/[A-Z]{2}$/) || '') + '';
-      if (requested[abbrev]) { keys.push(abbrev); }
+    if (country == 'US') {
+      if (state) {
+        var abbrev = (USA_ABBREV[state] || state.match(/[A-Z]{2}$/) || '') + '';
+        if (requested[abbrev]) { keys.push(abbrev); }
+        var county = admin + ', ' + abbrev;
+        if (requested[county]) { keys.push(county); }
+      }
+    } else if (state) {
+      var locality = [state, country].join(', ');
+      if (requested[locality]) { keys.push(locality); }
     }
     return keys;
   }
@@ -386,7 +396,8 @@ function available_start_rules(extracted) {
   var dates = extracted.labels;
   var data_series = extracted.series;
   var first_d = dates[0];
-  var other_d = dates.slice(1).filter(x => !!/^\d+\/1\/\d+$/.exec(x));
+  var other_d = dates.slice(1).filter(
+    x => !!/^\d+\/1\/\d+$/.exec(x) || x == '3/23/20');
   var third_v = _.sortBy(data_series.map(
       x => _.max(x[1].map(x => x.value))), x => -x)[2];
   var gt_rules = [10, 30, 80, 100, 300, 1000].filter(
@@ -457,13 +468,17 @@ function extract_data(csse, domain, field, stat, topcount, include) {
   field = field || 'confirmed';
   stat = stat || 'totals';
   topcount = topcount == null ? 10 : topcount;
-  var get_global_data = domain == 'Intl' ?  get_national_data : get_state_data;
+  var get_global_data = (
+     domain == 'Intl' ?  get_national_data :
+     domain == 'US' ?  get_state_data :
+     _.partialRight(get_state_data, domain));
   var global_data = get_global_data(csse, field);
   var first_nz = _.findIndex(global_data.totals, i => i > 0);
   var global_series = global_data.totals.slice(first_nz);
   var dates = global_data.dates.slice(first_nz);
-  var localities = (domain == 'Intl' ?
-      all_countries(csse[field]) : _.keys(USA_STATES));
+  var localities = (domain == 'Intl' ?  all_countries(csse[field]) :
+        domain == 'US' ?  _.keys(USA_STATES) :
+        all_localities.filter(c => c.endsWith(', ' + domain)));
   var state_series = _.mapValues(
       get_multi_local_data(csse, field, localities).seriesmap,
       v => v.slice(first_nz));
@@ -477,7 +492,7 @@ function extract_data(csse, domain, field, stat, topcount, include) {
       top_states.push([inc, extra])
     }
   }
-  if (domain != 'Intl' && parseInt(topcount)) {
+  if (domain == 'US' && parseInt(topcount)) {
     top_states.unshift([domain, global_series]);
   }
   var described_series = top_states.map(p => [p[0], p[1].map((x, i) =>
@@ -512,7 +527,7 @@ function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
   if (chart) { chart.detach(); }
   if (stat == 'deltas') {
     extract.series = _.map(extract.series, p => [p[0], _.map(p[1], (d, i) => {
-      if (i == 0) { return _.defaults({value: 0}, d); }
+      if (i == 0) { return null; }
       var cur = (d ? d.value : 0),
           prev = (p[1][i-1] ? p[1][i-1].value : 0);
       return _.defaults({value: cur - prev}, d);
@@ -708,7 +723,6 @@ theapp = new Vue({
     available_localities: null,
     data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
-    domain_choices: ['US', 'Intl'],
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
@@ -719,6 +733,18 @@ theapp = new Vue({
     this.configure_suggest();
   },
   computed: {
+    domain_choices: function() {
+      var choices = ['US', 'Intl'];
+      if (USA_STATES.hasOwnProperty(this.chosen_select)) {
+        choices.push(this.chosen_select);
+      } else if (parseInt(this.chosen_top) == 0 &&
+          USA_STATES.hasOwnProperty(this.chosen_include)) {
+        choices.push(this.chosen_include);
+      } else if (USA_STATES.hasOwnProperty(this.chosen_domain )) {
+        choices.push(this.chosen_domain);
+      }
+      return choices;
+    },
     start_choices: function() {
       if (this.csse == null) { return ['1/1/20', '>=80', '>=1000']; }
       var extract = this.extracted_data;
@@ -749,6 +775,14 @@ theapp = new Vue({
     chosen_advanced: url_property('advanced', '0'),
   },
   watch: {
+    chosen_domain: function(val) {
+      if (val == this.chosen_include ||
+          !this.chosen_include && val == this.chosen_select) {
+        this.chosen_include = '';
+        this.chosen_select = '';
+        currentLocalityToColorIndex = {};
+      }
+    },
     extracted_data: function(val) { this.draw_chart(); },
     chosen_start: function(val) { this.draw_chart(); },
     chosen_scale: function(val) { this.draw_chart(); },
@@ -856,7 +890,7 @@ theapp = new Vue({
 //////////////////////////////////////////////////////////////////////
 // Autocomplete list.
 //////////////////////////////////////////////////////////////////////
-function all_localities(csse) {
+function get_all_localities(csse) {
   if (csse == null) { return []; }
   var ext = csse['confirmed'],
     names = ext[0],
@@ -911,11 +945,19 @@ function add_to_semilist(semilist, item) {
   return semilist;
 }
 
-$('body').on('mouseenter mouseleave', '.ct-chart .ct-legend li', (e) => {
+function clear_hover_classes(element) {
+  $(element).removeClass($(element).prop('class').split(/\s+/).filter(
+      c => c.startsWith('ct-hover')).join(' '));
+}
+$('body').on('mouseleave mousedown', '.ct-chart .ct-legend li', (e) => {
+  clear_hover_classes($(e.target).closest('.ct-chart'));
+});
+$('body').on('mouseenter', '.ct-chart .ct-legend li', (e) => {
   var hc = $(e.target).prop('class').replace('ct-series', 'ct-hover-on');
   var inactive = $(e.target).closest('.inactive').length > 0;
-  $(e.target).closest('.ct-chart').toggleClass(
-      'ct-hover ' + hc, e.type == 'mouseenter' && !inactive);
+  if (!inactive) {
+    $(e.target).closest('.ct-chart').addClass('ct-hover ' + hc);
+  }
 });
 
 //////////////////////////////////////////////////////////////////////
@@ -929,7 +971,8 @@ load_feed_data = (data_feed_name == 'cds' ? load_cds_data : load_csse_data);
 load_feed_data().then(d => {
   csse = d;
   theapp.csse = d;
-  theapp.available_localities = all_localities(d);
+  all_localities = get_all_localities(d);
+  theapp.available_localities = all_localities;
   theapp.draw_chart();
 });
 
