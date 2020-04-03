@@ -87,7 +87,18 @@
 		 .domain(color_domain)
 		 .range(["#dcdcdc", "#d0d6cd", "#bdc9be", "#aabdaf", "#97b0a0", "#84a491", "#719782", "#5e8b73", "#4b7e64", "#387255", "#256546", "#125937", "#004d28"]);
 
-    var path = d3.geo.path();
+		 var projection = d3.geo.albersUsa()
+    	 .scale(1070)
+    	 .translate([width / 2, height / 2]);
+
+
+		var path = d3.geo.path();
+
+		var zoom = d3.behavior.zoom()
+    	.translate(projection.translate())
+  	  .scale(projection.scale())
+  	  .scaleExtent([height, 8 * height])
+  	  .on("zoom", zoomed);
 
 		var div = d3.select("#container").append("div")
 		 .attr("class", "tooltip")
@@ -104,7 +115,8 @@
             .on("click", clicked);
 
 
-    var g = svg.append("g");
+    var g = svg.append("g")
+			.call(zoom);;
 
 
 		queue()
@@ -177,35 +189,6 @@
        .on("click", clicked)
 		 };
 
-
-		var legend = svg.selectAll("g.legend")
-		 .data(ext_color_domain)
-		 .enter().append("g")
-		 .attr("class", "legend");
-
-		var ls_w = 73, ls_h = 20;
-
-		legend.append("rect")
-		 .attr("x", function(d, i){ return width - (i*ls_w) - ls_w;})
-		 .attr("y", 550)
-		 .attr("width", ls_w)
-		 .attr("height", ls_h)
-		 .style("fill", function(d, i) { return color(d); })
-		 .style("opacity", 0.8);
-
-		legend.append("text")
-		 .attr("x", function(d, i){ return width - (i*ls_w) - ls_w;})
-		 .attr("y", 590)
-		 .text(function(d, i){ return legend_labels[i]; });
-
-		 var legend_title = "Number of Confirmed Cases by County";
-
-		 svg.append("text")
-		 .attr("x", 10)
-		 .attr("y", 540)
-		 .attr("class", "legend_title")
-		 .text(function(){return legend_title});
-
      function clicked(d) {
         var x, y;
 
@@ -231,9 +214,13 @@
       .style("stroke-width", 1.5 / k + "px");
 }
 
+function zoomed() {
+projection.translate(d3.event.translate).scale(d3.event.scale);
+g.selectAll("path").attr("d", path);
+}
+
 		</script>
 
-<p>Source: U.S. Census</p>
 </body>
 
 </html>
