@@ -38,7 +38,7 @@ created by directly using the URL API.
 * `series`: confirmed or deaths.
 * `stat`: totals or deltas.
 * `scale`: linear or log10.
-* `norm`: none or first (normalized by first day).
+* `norm`: none, first (normalized by first day), or permillion (by population).
 * `start`: a date or >= expression as in the menu.
 * `top`: integer how how many top states or countries to include.
 * `include`: semicolon-separated list of counties/states/countries to include.
