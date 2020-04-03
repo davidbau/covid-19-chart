@@ -34,6 +34,7 @@
 
 	.county {
 	 	font: 14px sans-serif;
+		fill: #FFF;
 	 	font-weight: bold;
 	}
 
@@ -111,8 +112,8 @@
     svg.append("rect")
             .attr("class", "background")
             .attr("width", width)
-            .attr("height", height)
-            .on("click", clicked);
+            .attr("height", height);
+            //.on("click", clicked);
 
 
     var g = svg.append("g")
@@ -186,24 +187,24 @@
   		 div.transition().duration(300)
   		 .style("opacity", 0);
   		 })
-       .on("click", clicked)
+       //.on("click", clicked)
 		 };
 
-     function clicked(d) {
-        var x, y;
+     //function clicked(d) {
+        //var x, y;
 
-        if (d && centered !== d) {
-          var centroid = path.centroid(d);
-          x = centroid[0];
-          y = centroid[1];
-          k = 5;
-          centered = d;
-        } else {
-          x = width / 2;
-          y = height / 2;
-          k = 1;
-          centered = null;
-        }
+        //if (d && centered !== d) {
+        //  var centroid = path.centroid(d);
+//          x = centroid[0];
+//          y = centroid[1];
+//          k = 5;
+//          centered = d;
+//        } else {
+//          x = width / 2;
+//          y = height / 2;
+//          k = 1;
+//          centered = null;
+      //  }
 
   g.selectAll("path")
       .classed("active", centered && function(d) { return d === centered; });
@@ -212,12 +213,13 @@
       .duration(250)
       .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
       .style("stroke-width", 1.5 / k + "px");
-}
 
-function zoomed() {
-projection.translate(d3.event.translate).scale(d3.event.scale);
-g.selectAll("path").attr("d", path);
-}
+
+
+	function zoomed() {
+		projection.translate(d3.event.translate).scale(d3.event.scale);
+		g.selectAll("path").attr("d", path);
+	};
 
 		</script>
 
