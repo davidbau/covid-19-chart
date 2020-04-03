@@ -79,7 +79,7 @@
 	<div id="container"></div>
 		 <script type="text/javascript">
 		 var flat_data = null;
-		 var width = 960, height = 600, centered;
+		 var width = 960, height = 600;
 		 var color_domain = [10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 		 var ext_color_domain = [0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000]
 		 var legend_labels = ["< 10", "50+", "100+", "200+", "300+", "400+", "500+", "600+", "700+", "800+", "900+", "1000+", "1100+"]
@@ -89,11 +89,10 @@
 		 .range(["#dcdcdc", "#d0d6cd", "#bdc9be", "#aabdaf", "#97b0a0", "#84a491", "#719782", "#5e8b73", "#4b7e64", "#387255", "#256546", "#125937", "#004d28"]);
 
 		 var projection = d3.geo.albersUsa()
-    	 .scale(1070)
-    	 .translate([width / 2, height / 2]);
+    	 .scale(1070);
 
-
-		var path = d3.geo.path();
+		var path = d3.geo.path()
+			 .projection(projection);
 
 		var zoom = d3.behavior.zoom()
     	.translate(projection.translate())
@@ -109,15 +108,16 @@
 		 .attr("viewBox", `0 0 ${width} ${height}`)
 		 .style("margin", "-15px auto");
 
-    svg.append("rect")
-            .attr("class", "background")
-            .attr("width", width)
-            .attr("height", height);
-            //.on("click", clicked);
 
 
     var g = svg.append("g")
-			.call(zoom);;
+			.call(zoom);
+
+		g.append("rect")
+	     .attr("class", "background")
+	     .attr("width", width)
+	     .attr("height", height);
+	            //.on("click", clicked);
 
 
 		queue()
@@ -188,6 +188,8 @@
   		 .style("opacity", 0);
   		 })
        //.on("click", clicked)
+
+
 		 };
 
      //function clicked(d) {
@@ -206,20 +208,20 @@
 //          centered = null;
       //  }
 
-  g.selectAll("path")
-      .classed("active", centered && function(d) { return d === centered; });
+//  g.selectAll("path")
+//      .classed("active", centered && function(d) { return d === centered; });
 
-  g.transition()
-      .duration(250)
-      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
-      .style("stroke-width", 1.5 / k + "px");
+//  g.transition()
+//      .duration(250)
+//      .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + k + ")translate(" + -x + "," + -y + ")")
+//      .style("stroke-width", 1.5 / k + "px");
 
 
 
 	function zoomed() {
 		projection.translate(d3.event.translate).scale(d3.event.scale);
 		g.selectAll("path").attr("d", path);
-	};
+	}
 
 		</script>
 
