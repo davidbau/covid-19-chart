@@ -14,6 +14,7 @@
 	<script src="/lib/usa_state_list.js"></script>
 </head>
 
+
 <!-- CSS -->
 <style>
 
@@ -74,6 +75,7 @@
 
 <body>
 	<h1>Confirmed Cases by County</h1>
+	<div id="container"></div>
 		 <script type="text/javascript">
 		 var flat_data = null;
 		 var width = 960, height = 600, centered;
@@ -87,13 +89,12 @@
 
     var path = d3.geo.path();
 
-		var div = d3.select("body").append("div")
+		var div = d3.select("#container").append("div")
 		 .attr("class", "tooltip")
 		 .style("opacity", 0);
 
-		var svg = d3.select("body").append("svg")
-		 .attr("width", width)
-		 .attr("height", height)
+		var svg = d3.select("#container").append("svg")
+		 .attr("viewBox", `0 0 ${width} ${height}`)
 		 .style("margin", "-15px auto");
 
     svg.append("rect")
