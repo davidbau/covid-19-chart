@@ -62,11 +62,11 @@ function merge_feeds(s1, s2) {
 
 var cds, csse;
 Promise.all([
-  flatten_promise(load_csse_data()),
-  load_flat_cds_data(),
+  flatten_promise(load_csse_data()).catch(e => {}),
+  load_flat_cds_data().catch(e => {}),
 ]).then(x => {
   [csse, cds] = x;
-  merged = merge_feeds(csse, cds);
+  merged = merge_feeds(csse || {}, cds || {});
   document.querySelector('pre').innerText +=
     'Loaded csse with ' + _.size(csse) + ' localities\n' +
     'and cds with ' + _.size(cds) +' localities\n' +
