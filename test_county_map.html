@@ -1,85 +1,99 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<title>Confirmed Cases by County</title>
-	<script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
-	<script type="text/javascript" src="https://d3js.org/queue.v1.min.js"></script>
-	<script type="text/javascript" src="https://d3js.org/topojson.v1.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.js" integrity="sha256-iAuxnf8Cwr0yrQkpf6oQG4PaL/oVmoer6V/RfX2KQws=" crossorigin="anonymous"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
-	<script src="/lib/load_csse.js"></script>
-	<script src="/lib/utils.js"></script>
-	<script src="/lib/flatten.js"></script>
-	<script src="/lib/usa_state_list.js"></script>
+  <meta charset="utf-8">
+  <title>Confirmed Cases by County</title>
+  <script type="text/javascript" src="https://d3js.org/d3.v3.min.js"></script>
+  <script type="text/javascript" src="https://d3js.org/queue.v1.min.js"></script>
+  <script type="text/javascript" src="https://d3js.org/topojson.v1.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.1.0/papaparse.js" integrity="sha256-iAuxnf8Cwr0yrQkpf6oQG4PaL/oVmoer6V/RfX2KQws=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js" integrity="sha256-VeNaFBVDhoX3H+gJ37DpT/nTuZTdjYro9yBruHjVmoQ=" crossorigin="anonymous"></script>
+  <script src="/lib/load_csse.js"></script>
+  <script src="/lib/utils.js"></script>
+  <script src="/lib/flatten.js"></script>
+  <script src="/lib/usa_state_list.js"></script>
 </head>
 
 
 <!-- CSS -->
 <style>
 
-	path {
-	 	stroke:white;
-	 	stroke-width: 1px;
-	}
+  path {
+     stroke:white;
+     stroke-width: 1px;
+  }
 
-	body {
-	 	font-family: 'Proxima Nova', sans-serif;
-	}
+  body {
+     font-family: 'Proxima Nova', sans-serif;
+  }
 
   .background {
   fill: none;
   pointer-events: all;
   }
 
-	.county {
-	 	font: 14px sans-serif;
-		fill: #FFF;
-	 	font-weight: bold;
-	}
+  .county {
+     font: 14px sans-serif;
+    fill: #FFF;
+     font-weight: bold;
+  }
 
-	.legend {
-	 	font-size: 14px;
-	 	font-family: 'Proxima Nova', sans-serif;
-	}
+  .legend {
+     font-size: 14px;
+     font-family: 'Proxima Nova', sans-serif;
+  }
 
-	.legend_title {
-	 	font-size: 14px;
-	 	font-family: 'Proxima Nova', sans-serif;
-	 	font-weight: bold;
-	}
+  .legend_title {
+     font-size: 14px;
+     font-family: 'Proxima Nova', sans-serif;
+     font-weight: bold;
+  }
 
-	div.tooltip {
-	 	position: absolute;
-	 	left: 75px;
-	 	text-align: center;
-	 	height: 16px;
-	 	padding: 10px;
-	 	font-size: 14px;
-	 	background: #FFFFFF;
-	 	border: 1px solid #989898;
- 		pointer-events: none;
-	}
+  div.tooltip {
+     position: absolute;
+     left: 75px;
+     text-align: center;
+     height: 16px;
+     padding: 10px;
+     font-size: 14px;
+     background: #FFFFFF;
+     border: 1px solid #989898;
+     pointer-events: none;
+  }
 
-	p {
-		font-family: 'Proxima Nova', sans-serif;
-		font-size:10px;
-		margin: 20px 0 0 10px;
-	}
+  p {
+    font-family: 'Proxima Nova', sans-serif;
+    font-size:10px;
+    margin: 20px 0 0 10px;
+  }
 
-	@media (max-width: 400px) {
+  @media (max-width: 400px) {
     .d3map {
         display: none;
     }
-}
+  }
+
+  #container {
+     width: 25%;
+     background: pink;
+     display: inline-block;
+  }
+
+  #container svg {
+     vertical-align: top;
+  }
 </style>
 
 <body>
-	<h1>Confirmed Cases by County</h1>
-	<div id="container"></div>
-		 <script type="text/javascript" src="lib/map-picker.js">
-		</script>
+  <h1>Confirmed Cases by County</h1>
+  <div id="container"></div>
+     <script type="text/javascript" src="lib/map-picker.js">
+    </script>
 
 </body>
+
+<script>
+create_map_picker('#container');
+</script>
 
 </html>
