@@ -39,11 +39,12 @@ process = null; // process variable is needed by simple-suggest.
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
 <script src="lib/load_csse.js?v=5"></script> <!-- JHU CSSE loader -->
-<script src="lib/load_cds.js?v=2"></script> <!-- JHU CSSE loader -->
+<script src="lib/load_flat_cds.js?v=2"></script> <!-- JHU CSSE loader -->
 <script src="lib/utils.js"></script> <!-- Date and csv utilities -->
 <script src="lib/usa_state_list.js"></script> <!-- translating abbrevs -->
-<script src="lib/fips_counties.js"></script>
-<script src="lib/countries.js"></script>
+<script src="lib/locations.js"></script>
+<script src="lib/flatten_csse.js"></script>
+<script src="lib/merge_feeds.js"></script>
 <link rel="stylesheet" href="lib/select.css"> <!-- mobile friendly select -->
 <link rel="stylesheet" href="lib/custom-chart.css"> <!-- colors etc -->
 <style>
@@ -209,161 +210,9 @@ Seeking Vue.js+D3 people to help improve this resource.
 // Globals - exposing these globals is useful for debugging.
 //////////////////////////////////////////////////////////////////////
 var data_feed_name = location.href.indexOf('feed=cds') < 0 ? 'csse' : 'cds';
-var csse = null,   // Cleaned data loaded from csse.
-    chart = null,  // The main object, Chartist object.
+var chart = null,  // The main object, Chartist object.
     theapp = null, // Main application controller, Vue object.
     all_localities = [];
-
-//////////////////////////////////////////////////////////////////////
-// By-day summarization.
-// Some days the source data is broken out by-county and other days
-// by-state.  This function sums time series across rows based on
-// function filters for state and country strings; and get_state_data
-// applies a rule for consolidating U.S. state data that is coded
-// as either "County Name, ST' or "State Name".
-//////////////////////////////////////////////////////////////////////
-function aggregate_level(row, aggregate_i, state_i, admin_i) {
-  // For CSSE we need to sum up every matching row.
-  if (aggregate_i < 0) { return 1; }
-  // For CDS we need to sum up only the highest-level aggregate we see.
-  if (admin_i >= 0 && row[admin_i]) { return 3; } // admin
-  if (state_i >= 0 && row[state_i]) { return 2; } // state
-  return 1; // country
-}
-function rollup_ts(series, filter) {
-  var names = series[0],
-    fips_i = fieldnum(names, 'fips'),
-    admin_i = fieldnum(names, 'admin'), // OR county
-    state_i = fieldnum(names, 'state'),
-    country_i = fieldnum(names, 'country'),
-    aggregate_i = fieldnum(names, 'aggregate'),
-    fips_i = fieldnum(names, 'fips'),
-    ts_i = first_date_field(names),
-    ts_names = names.slice(ts_i),
-    totals = Array(ts_names.length),
-    cur_agg = null;
-  for (var row of series.slice(1)) {
-    if (!filter(row[country_i], row[state_i], row[admin_i], row[fips_i])) {
-      continue;
-    }
-    var agg = aggregate_level(row, aggregate_i, state_i, admin_i);
-    if (!cur_agg || agg < cur_agg) {
-       _.fill(totals, 0); cur_agg = agg;
-    }
-    if (agg != cur_agg) { continue; }
-    for (var i = ts_i; i < names.length; ++i) {
-      totals[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
-    }
-  }
-  return [ts_names, totals];
-}
-function rollup_multi_ts(series, key_function) {
-  var names = series[0],
-    fips_i = fieldnum(names, 'fips'),
-    admin_i = fieldnum(names, 'admin'),
-    state_i = fieldnum(names, 'state'),
-    country_i = fieldnum(names, 'country'),
-    aggregate_i = fieldnum(names, 'aggregate'),
-    ts_i = first_date_field(names),
-    ts_names = names.slice(ts_i),
-    all_totals = {},
-    all_agg = {};
-  for (var row of series.slice(1)) {
-    var keys = key_function(row[country_i], row[state_i], row[admin_i],
-      row[fips_i]);
-    var agg = aggregate_level(row, aggregate_i, state_i, admin_i);
-    _.forEach(keys, key => {
-      if (!all_totals.hasOwnProperty(key) ||
-          !all_agg[key] || agg < all_agg[key]) {
-        all_totals[key] = _.fill(Array(ts_names.length), 0);
-        all_agg[key] = agg;
-      }
-      if (agg == all_agg[key]) {
-        var sumrow = all_totals[key];
-        for (var i = ts_i; i < names.length; ++i) {
-          sumrow[i - ts_i] += (isNaN(row[i]) || !row[i] ? 0 : parseInt(row[i]));
-        }
-      }
-    });
-  }
-  return [ts_names, all_totals];
-}
-function norm_ctry(s) {
-  if (s && s.indexOf('*') >= 0) { s = s.replace('*', ''); }
-  if (s == 'Korea, South') return 'S Korea';
-  if (s == 'United Kingdom') return 'UK';
-  return s;
-}
-function all_countries(series) {
-  var names = series[0],
-    country_i = fieldnum(names, 'country');
-  var all = _.sortBy(_.uniq(series.slice(1).map(x => norm_ctry(x[country_i]))));
-  return _.filter(all, x => x && x != 'China');
-}
-function get_local_data(csse, field, locality) {
-  if (/,\s*[A-Z][A-Z]$/.exec(locality) && locality.slice(-2) in USA_STATES) {
-    return get_admin_data(csse, field, locality);
-  } else if (locality in USA_STATES) {
-    return get_state_data(csse, field, locality);
-  } else {
-    return get_national_data(csse, field, locality);
-  }
-}
-function get_admin_data(csse, field, locality) {
-  var dates, totals, deltas,
-    st_abbr = locality.slice(-2),
-    picked_state = USA_STATES[st_abbr],
-    picked_county = locality.slice(0,
-        locality.indexOf(',')).trim().toLowerCase();
-  [dates, totals] = rollup_ts(csse[field],
-    (country, state, admin) => { return country == 'US' &&
-       state && state == picked_state &&
-       admin && admin.toLowerCase().indexOf(picked_county) >= 0
-  });
-  return { dates: dates, totals: totals }
-}
-function get_state_data(csse, field, chosen_abbrev) {
-  var dates, totals, deltas;
-  [dates, totals] = rollup_ts(csse[field],
-    (country, state) => { return country == 'US' &&
-       state && (!chosen_abbrev ||
-         state == USA_STATES[chosen_abbrev] ||
-         state.replace(' (From Diamond Princess)', '')
-           .endsWith(chosen_abbrev))
-  });
-  return { dates: dates, totals: totals }
-}
-function get_national_data(csse, field, chosen_country) {
-  var dates, totals, deltas;
-  [dates, totals] = rollup_ts(csse[field],
-    (country, state) =>
-        (!chosen_country && (country != 'China') ||
-         (norm_ctry(country) == chosen_country)) );
-  return { dates: dates, totals: totals }
-}
-function get_multi_local_data(csse, field, localities) {
-  var requested = _.zipObject(localities, _.fill(Array(localities.length), 1));
-  function keys_for_row(country, state, admin, fips) {
-    var keys = [];
-    country = norm_ctry(country);
-    if (requested[country]) { keys.push(country); }
-    if (country == 'US') {
-      if (state) {
-        var abbrev = (USA_ABBREV[state] || state.match(/[A-Z]{2}$/) || '') + '';
-        if (requested[abbrev]) { keys.push(abbrev); }
-        var county = admin + ', ' + abbrev;
-        if (requested[county]) { keys.push(county); }
-      }
-    } else if (state) {
-      var locality = [state, country].join(', ');
-      if (requested[locality]) { keys.push(locality); }
-    }
-    return keys;
-  }
-  var dates, rollup;
-  [dates, rollup] = rollup_multi_ts(csse[field], keys_for_row);
-  return { dates: dates, seriesmap: rollup };
-}
 
 //////////////////////////////////////////////////////////////////////
 // Normalization.
@@ -452,6 +301,30 @@ function apply_start_rule(start, extracted) {
 }
 
 //////////////////////////////////////////////////////////////////////
+// Filtering and tabulation.
+//////////////////////////////////////////////////////////////////////
+
+function select_localities(feed, fn) {
+  return _.pickBy(feed, (v, k) => v && fn(v[0]));
+}
+
+function tabulate_dates(series, field) {
+  var dayrange = (!series.length ? [] : _.range(
+        _.min(series.map(p => p[1][0].daynum)),
+        _.max(series.map(p => p[1][p[1].length - 1].daynum)) + 1)),
+      firstday = dayrange[0],
+      daterange = dayrange.map(date_from_num),
+      tabulated = series.map(p => {
+        var t = new Array(dayrange.length);
+        p[1].forEach(d => t[d.daynum - firstday] = d[field]);
+        return [p[0], t];
+      }),
+      filtered = tabulated.filter(p => p[1].length);
+  return { dates: daterange, series: filtered };
+}
+
+
+//////////////////////////////////////////////////////////////////////
 // Data extraction.
 // Loaded data is summed, selected, filtered, and sorted here.
 // The user can choose a field (deaths/confirmed), a stat
@@ -462,43 +335,41 @@ function apply_start_rule(start, extracted) {
 // of time series data, by state abbreviation.  Ten states
 // are included, based on the highest numbers on the last day.
 //////////////////////////////////////////////////////////////////////
-function extract_data(csse, domain, field, stat, topcount, include) {
-  if (!csse) return { labels: [], dates: [] };
+function extract_data(feed, domain, field, stat, topcount, include) {
+  if (!feed) return { labels: [], series: [] };
   domain = domain || 'US';
   field = field || 'confirmed';
   stat = stat || 'totals';
   topcount = topcount == null ? 10 : topcount;
-  var get_global_data = (
-     domain == 'Intl' ?  get_national_data :
-     domain == 'US' ?  get_state_data :
-     _.partialRight(get_state_data, domain));
-  var global_data = get_global_data(csse, field);
-  var first_nz = _.findIndex(global_data.totals, i => i > 0);
-  var global_series = global_data.totals.slice(first_nz);
-  var dates = global_data.dates.slice(first_nz);
-  var localities = (domain == 'Intl' ?  all_countries(csse[field]) :
-        domain == 'US' ?  _.keys(USA_STATES) :
-        all_localities.filter(c => c.endsWith(', ' + domain)));
-  var state_series = _.mapValues(
-      get_multi_local_data(csse, field, localities).seriesmap,
-      v => v.slice(first_nz));
-  var top_states = _.toPairs(state_series)
-      .sort((x, y) => (score_series(stat, y[1])) - (score_series(stat, x[1]))
-           ).slice(0, parseInt(topcount));
-  var included = _.fromPairs(top_states);
-  for (var inc of include.split(';')) {
-    if (inc && !included.hasOwnProperty(inc)) {
-      var extra = get_local_data(csse, field, inc).totals.slice(first_nz);
-      top_states.push([inc, extra])
+  var filter = ((v) => v.level == 'country');
+  if (feed.hasOwnProperty(domain)) {
+    if (feed[domain][0].level == 'country') {
+      filter = ((v) => v.level == 'state' && v.country == domain);
+    } else if (feed[domain][0].level == 'state') {
+      var domain_state = feed[domain].state,
+          domain_country = feed[domain].country;
+      filter = ((v) => v.level == 'county' && v.country == domain_country
+                && v.state == domain_state);
     }
   }
-  if (domain == 'US' && parseInt(topcount)) {
-    top_states.unshift([domain, global_series]);
+  var selected = select_localities(feed, filter)
+  console.log(_.size(selected), 'selected');
+  var to_plot = _.toPairs(selected)
+      .sort((x, y) => (score_series(stat, field, y[1]))
+                    - (score_series(stat, field, x[1])))
+      .slice(0, parseInt(topcount));
+  var included = _.fromPairs(to_plot);
+  for (var inc of include.split(';')) {
+    if (inc && !included.hasOwnProperty(inc) && feed.hasOwnProperty(inc)) {
+      included[inc] = feed[inc];
+      to_plot.push([inc, feed[inc]]);
+    }
   }
-  var described_series = top_states.map(p => [p[0], p[1].map((x, i) =>
-     { return { meta: p[0] + ' ' + dates[i], value: x }; })]);
+  var tabulated = tabulate_dates(to_plot, field);
+  var described_series = tabulated.series.map(p => [p[0], p[1].map((x, i) =>
+     { return { meta: p[0] + ' ' + tabulated.dates[i], value: x }; })]);
   return {
-    labels: dates,
+    labels: tabulated.dates,
     series: described_series
   };
 }
@@ -719,9 +590,10 @@ theapp = new Vue({
   el: '#app',
   router: new VueRouter(),
   data: {
-    csse: null,
+    feed: null,
+    loaded_csse: false,
+    loaded_cds: false,
     available_localities: null,
-    data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
@@ -746,7 +618,7 @@ theapp = new Vue({
       return choices;
     },
     start_choices: function() {
-      if (this.csse == null) { return ['1/1/20', '>=80', '>=1000']; }
+      if (this.feed == null) { return ['1/1/20', '>=80', '>=1000']; }
       var extract = this.extracted_data;
       var choices = available_start_rules(extract);
       if (this.chosen_start && choices.indexOf(this.chosen_start) < 0) {
@@ -757,7 +629,7 @@ theapp = new Vue({
       return choices;
     },
     extracted_data: function() {
-      return extract_data(this.csse, this.chosen_domain,
+      return extract_data(this.feed, this.chosen_domain,
           this.chosen_series, this.chosen_stat,
           this.chosen_top, this.chosen_include);
     },
@@ -888,28 +760,6 @@ theapp = new Vue({
 });
 
 //////////////////////////////////////////////////////////////////////
-// Autocomplete list.
-//////////////////////////////////////////////////////////////////////
-function get_all_localities(csse) {
-  if (csse == null) { return []; }
-  var ext = csse['confirmed'],
-    names = ext[0],
-    localities = _.clone(USA_STATES),
-    admin_i = fieldnum(names, 'admin'),
-    state_i = fieldnum(names, 'state'),
-    country_i = fieldnum(names, 'country');
-  _.forEach(ext.slice(1), r => {
-    if (r[country_i]) {
-      localities[norm_ctry(r[country_i])] = 1;
-      if (r[country_i] == 'US' && r[admin_i] && r[state_i]) {
-        localities[r[admin_i] + ', ' + USA_ABBREV[r[state_i]]] = 1;
-      }
-    }
-  });
-  return _.keys(localities);
-}
-
-//////////////////////////////////////////////////////////////////////
 // Utility functions.
 //////////////////////////////////////////////////////////////////////
 function url_property(name, default_value, nav) {
@@ -927,12 +777,12 @@ function url_property(name, default_value, nav) {
     }
   };
 }
-function score_series(stat, s) {
+function score_series(stat, field, s) {
+  var last = _.map(s.slice(-3), d => d ? parseInt(d[field] || 0) : 0);
   if (stat == 'deltas') {
-    var last = _.map(s.slice(-3), d => parseInt(d || 0) || 0);
     return _.max(last) - _.min(last);
   } else {
-    return _.sum(s.slice(-3)) / (1e-10 + s.slice(-3).length);
+    return _.sum(last) / (1e-10 + last.length);
   }
 }
 function in_semilist(semilist, item) {
@@ -962,19 +812,25 @@ $('body').on('mouseenter', '.ct-chart .ct-legend li', (e) => {
 
 //////////////////////////////////////////////////////////////////////
 // Initialization.
-// Load the csse data, and then tell the vue app to draw the chart.
+// Load the feed data, and then tell the vue app to draw the chart.
 //////////////////////////////////////////////////////////////////////
 
-createCssStyles();
+var feed, cds, csse; // Globals, for debugging.
 
-load_feed_data = (data_feed_name == 'cds' ? load_cds_data : load_csse_data);
-load_feed_data().then(d => {
-  csse = d;
-  theapp.csse = d;
-  all_localities = get_all_localities(d);
-  theapp.available_localities = all_localities;
+Promise.all([
+  flatten_promise(load_csse_data()).catch(e => {}),
+  load_flat_cds_data().catch(e => {}),
+]).then(x => {
+  [csse, cds] = x;
+  feed = merge_feeds(csse || {}, cds || {});
+  theapp.feed = feed;
+  theapp.loaded_csse = _.size(csse) > 0;
+  theapp.loaded_cds = _.size(cds) > 0;
+  theapp.available_localities = _.keys(feed);
   theapp.draw_chart();
 });
+
+createCssStyles();
 
 </script>
 <script async>(u=>{u.searchParams.delete('fbclid');history.replaceState(null,'', u.href); })(new URL(location))</script>
