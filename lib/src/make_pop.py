@@ -46,6 +46,10 @@ for k,v in data.items():
         k = country_map[k]
     k = k.replace(', USA', '')
     k = k.replace(' County, ', ', ')
+    k = k.replace(' Parish, ', ', ')
+    k = k.replace(' Parish, ', ', ')
+    k = k.replace(' City And Borough, ', ', ')
+    k = k.replace(' Borough, ', ', ')
     if "population" in v.keys():
         pop[k] = v["population"]
         present += 1
