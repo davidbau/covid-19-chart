@@ -444,12 +444,6 @@ function apply_start_rule(start, extracted) {
         return null;
       }
     }
-    data_series.forEach(p => {
-      var lastPoint = _.last(p[1]);
-      if (lastPoint) {
-        lastPoint.pointLabel = lastPoint.meta.replace(/ \d+\/\d+\/\d+$/, '');
-      }
-    });
     data_series = data_series.map(x => [x[0], shift_series(x[1], min_v)]);
     data_series = data_series.filter(x => !!x[1]);
     labels = _.range(0, _.max(data_series.map(x => x[1].length)));
@@ -614,7 +608,8 @@ function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
         },
       }),
       Chartist.plugins.ctPointLabels({
-        textAnchor: 'middle'
+        textAnchor: 'left',
+        labelOffset: { x: 7, y: 3 },
       })
     ]
   });
@@ -823,6 +818,10 @@ theapp = new Vue({
       var ordered = _.defaults({
         series: reorderSeriesForColorStability(normalized.series)
       }, shifted);
+      ordered.series.forEach(p => {
+        var lastPoint = _.last(p[1]);
+        if (lastPoint) { lastPoint.pointLabel = p[0]; }
+      });
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale, this.chosen_norm);
