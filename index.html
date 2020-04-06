@@ -758,7 +758,7 @@ theapp = new Vue({
   },
   computed: {
     domain_choices: function() {
-      var choices = ['US', 'Intl'];
+      var choices = ['Intl', 'US'];
       if (USA_STATES.hasOwnProperty(this.chosen_select)) {
         choices.push(this.chosen_select);
       } else if (parseInt(this.chosen_top) == 0 &&
