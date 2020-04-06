@@ -53,6 +53,6 @@ this <a href="http://davidbau.com/archives/2020/03/25/covid19_chart_api.html">bl
 
 Acknowledgements
 ----------------
-Thanks to <a href="http://blog.davidebbo.com/about/">David Ebbo</a> for improving the selection UI!
+Thanks to <a href="http://blog.davidebbo.com/about/">David Ebbo</a> for improving the selection UI, and thanks to <a href="https://www.nytimes.com/2020/02/22/crosswords/daily-puzzle-2020-02-23.html">David Maymudes</a> for adding per-population normalization!
 
 Thanks to the support of <a href="https://quest.mit.edu/">MIT Quest</a>.
