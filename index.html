@@ -535,7 +535,8 @@ function xaxis_title(field, start) {
 // The extract data is plotted using chartist.js,
 // using the given scale.
 //////////////////////////////////////////////////////////////////////
-function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
+function plot_series(extract, stat, scale, norm, xaxis, yaxis,
+     select, updateSelect) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
   if (stat == 'deltas') {
@@ -583,7 +584,14 @@ function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
       right: 10,
     },
     plugins: [
-      Chartist.plugins.tooltip(),
+      Chartist.plugins.tooltip({
+        valueTransform: (v => {
+          v = v.replace(/(\.\d{2})\d*$/, '$1');
+          if (norm == 'first') { v = v + '&times; first day'; }
+          if (norm == 'pop') { v = v + ' per million'; }
+          return v;
+        }),
+      }),
       Chartist.plugins.ctAxisTitle({
         axisX: {
           axisTitle: xaxis,
@@ -826,7 +834,7 @@ theapp = new Vue({
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale, this.chosen_norm);
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
-      plot_series(ordered, this.chosen_stat, this.chosen_scale,
+      plot_series(ordered, this.chosen_stat, this.chosen_scale, this.chosen_norm,
           xtitle, ytitle,
           this.chosen_select,
           s => { this.chosen_select = s; });
