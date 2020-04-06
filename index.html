@@ -492,8 +492,9 @@ function extract_data(csse, domain, field, stat, topcount, include) {
       get_multi_local_data(csse, field, localities).seriesmap,
       v => v.slice(first_nz));
   var top_states = _.toPairs(state_series)
-      .sort((x, y) => (score_series(stat, y[1])) - (score_series(stat, x[1]))
-           ).slice(0, parseInt(topcount));
+      .sort((x, y) => (score_series(stat, y[1])) - (score_series(stat, x[1])))
+      .filter(p => p[0].indexOf('Unassigned') < 0)
+      .slice(0, parseInt(topcount));
   var included = _.fromPairs(top_states);
   for (var inc of include.split(';')) {
     if (inc && !included.hasOwnProperty(inc)) {
