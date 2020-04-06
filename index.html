@@ -40,6 +40,7 @@ process = null; // process variable is needed by simple-suggest.
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
 <script src="lib/load_csse.js?v=5"></script> <!-- JHU CSSE loader -->
 <script src="lib/load_cds.js?v=2"></script> <!-- JHU CSSE loader -->
+<script src="lib/population.js"></script> <!-- population per region -->
 <script src="lib/utils.js"></script> <!-- Date and csv utilities -->
 <script src="lib/usa_state_list.js"></script> <!-- translating abbrevs -->
 <script src="lib/fips_counties.js"></script>
@@ -164,7 +165,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td>Series:</td><td><input v-model.lazy="chosen_series"> (confirmed/deaths)</td></tr>
 <tr><td>Stat:</td><td><input v-model.lazy="chosen_stat"> (totals/deltas)</td></tr>
 <tr><td>Scale:</td><td><input v-model.lazy="chosen_scale"> (linear/log10)</td></tr>
-<tr><td>Norm:</td><td><input v-model.lazy="chosen_norm"> (none/first)</td></tr>
+<tr><td>Norm:</td><td><input v-model.lazy="chosen_norm"> (none/first/pop)</td></tr>
 <tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=num, or m/d/y)</td></tr>
 <tr><td>Top:</td><td><input v-model.lazy="chosen_top"> (integer)</td></tr>
 <tr><td>Include:</td><td><input v-model.lazy="chosen_include"> (';' between states)</td></tr>
@@ -380,6 +381,15 @@ function apply_norm_rule(rule, extracted) {
           }, d))];
     });
   }
+  if (rule == 'pop') {
+    extracted.series = extracted.series.map(s => {
+      return [s[0], s[0] in POPULATION ? s[1].map(
+          d => d && _.defaults({
+            meta: d.meta + ' (' + d.value + ')',
+            value: +(d.value * 1000000 / POPULATION[s[0]]).toFixed(1)
+          }, d)) : {}];
+    });
+  }
   return extracted;
 }
 
@@ -505,7 +515,9 @@ function extract_data(csse, domain, field, stat, topcount, include) {
 function yaxis_title(field, stat, scale, norm) {
   var desc = {totals: 'Total cumulative ', deltas: 'Daily new '}[stat] +
              {confirmed: 'confirmed cases', deaths: 'deaths'}[field] +
-             {first: ', / first day', 'none': ''}[norm] +
+             {'first': ', / first day',
+              'pop': ' per million',
+              'none': ''}[norm] +
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
 }
