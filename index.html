@@ -139,6 +139,11 @@ Hover on points for specific numbers.
     {{ option }}
   </option>
 </select>
+<select v-model="chosen_norm" class="select-css">
+  <option v-for="option in norm_choices" v-bind:value="option">
+    {{ option == 'none' ? 'norm' : '/' + option}}
+  </option>
+</select>
 <select v-model="chosen_start" class="select-css">
   <option v-for="option in start_choices" v-bind:value="option">
     {{ option }}
@@ -407,7 +412,7 @@ function available_start_rules(extracted) {
   var data_series = extracted.series;
   var first_d = dates[0];
   var other_d = dates.slice(1).filter(
-    x => !!/^\d+\/1\/\d+$/.exec(x) || x == '3/23/20');
+    x => !!/^\d+\/1\/\d+$/.exec(x));
   var third_v = _.sortBy(data_series.map(
       x => _.max(x[1].map(x => x.value))), x => -x)[2];
   var gt_rules = [10, 30, 80, 100, 300, 1000].filter(
@@ -741,6 +746,7 @@ theapp = new Vue({
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
+    norm_choices: ['none', 'first', 'pop'],
     added_locality: null,
     selectStateDomain: null // The domain that the saved state is for
   },
