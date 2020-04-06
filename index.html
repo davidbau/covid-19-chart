@@ -732,6 +732,7 @@ theapp = new Vue({
   router: new VueRouter(),
   data: {
     csse: null,
+    local_us_state: null, // Determined via geolocation.
     available_localities: null,
     data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
@@ -754,6 +755,10 @@ theapp = new Vue({
         choices.push(this.chosen_include);
       } else if (USA_STATES.hasOwnProperty(this.chosen_domain )) {
         choices.push(this.chosen_domain);
+      }
+      if (this.local_us_state != null &&
+          choices[choices.length - 1] != this.local_us_state) {
+        choices.push(this.local_us_state);
       }
       return choices;
     },
@@ -986,6 +991,12 @@ load_feed_data().then(d => {
   all_localities = get_all_localities(d);
   theapp.available_localities = all_localities;
   theapp.draw_chart();
+});
+
+$.getJSON('https://ipapi.co/json/', (geo) => {
+  if (geo.country == 'US' && USA_STATES.hasOwnProperty(geo.region_code)) {
+    theapp.local_us_state = geo.region_code;
+  }
 });
 
 </script>
