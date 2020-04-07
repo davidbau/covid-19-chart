@@ -1,11 +1,11 @@
 <!doctype html>
 <html>
 <head>
-<title>COVID-19 Chart Maker</title>
+<title>COVID-19 Live Chart</title>
 <meta name="description"
  content="Interactive chart of coronavirus cases over time.">
 <meta property="og:url" content="https://covid19chart.org/">
-<meta property="og:title" content="COVID-19 Chart Maker" />
+<meta property="og:title" content="COVID-19 Live Chart" />
 <meta property="og:description"
  content="Interactive chart of coronavirus cases over time." />
 <meta property="og:image"
@@ -102,20 +102,22 @@ select { margin-top: 1px; margin-bottom: 1px; }
 <form class="pane-menu" autocomplete="none">
 <h1>{{ chosen_domain == 'US' ? 'USA' :
        chosen_domain == 'Intl' ? 'International' : 'Local' }}
-COVID-19 <nobr>Chart <span v-if="chosen_advanced == '1'">API</span
-><span v-else>Maker</span>
+COVID-19 Live <nobr>Chart <span v-if="chosen_advanced == '1'">API</span
+>
 <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:bottom;margin-bottom:2px;"></a></nobr></h1>
-<p><span v-if="parseInt(chosen_top) > 0">Stats on {{ chosen_top }}
+<p><span v-if="parseInt(chosen_top) > 0">Showing {{ chosen_top }}
 {{ chosen_domain == 'US' ? 'states' :
    chosen_domain == 'Intl' ? 'countries outside China' :
    'localities in ' + chosen_domain }}
-with highest numbers.</span> Data are from
+with highest numbers.</span>
+Compare other countries, states, and counties by searching below.
+Click on the colored squares to focus on a locality.
+Hover on points for specific numbers.
+Data are from
 <a v-if="data_feed_name == 'cds'"
 href="https://coronadatascraper.com/">coronadatascraper.com</a>
 <a v-else
 href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
-Click on the colored squares to focus on a locality.
-Hover on points for specific numbers.
 <a href="javascript:" v-on:click="print_page()">Print the chart.</a>
 </p>
 <div style="text-align:center" class="buttonrow">
