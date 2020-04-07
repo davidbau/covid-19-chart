@@ -541,11 +541,14 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
   if (stat == 'deltas') {
+    // How many days back do we go to calculate the delta
+    const deltaInterval = 4;
     extract.series = _.map(extract.series, p => [p[0], _.map(p[1], (d, i) => {
       if (i == 0) { return null; }
+      var prevIndex = Math.max(0, i - deltaInterval);
       var cur = (d ? d.value : 0),
-          prev = (p[1][i-1] ? p[1][i-1].value : 0);
-      return _.defaults({value: cur - prev}, d);
+          prev = (p[1][prevIndex] ? p[1][prevIndex].value : 0);
+      return _.defaults({value: (cur - prev) / (i - prevIndex)}, d);
     })]);
   }
   if (scale.startsWith('log')) {
