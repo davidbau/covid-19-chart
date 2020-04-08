@@ -148,7 +148,7 @@ Hover on points for specific numbers.
 <vue-simple-suggest :list="available_localities" ref="suggest"
  placeholder="Pick your own localities, one at a time"
 :filter-by-query="true" v-model="added_locality"
-select="add_locality()"></vue-simple-suggest
+@select="add_locality()"></vue-simple-suggest
 ><button v-on:click="reset"><span v-if="!chosen_select">Reset</span
 ><span v-else>Clean up</span></button>
 </div>
