@@ -7,7 +7,7 @@ into an interactive chart with both log and linear options,
 breakouts by state, and graphs of changes from day to day of
 reported deaths and confirmed cases.
 
-<a href="https://covid19chart.org">See the live chart at
+<a href="https://covid19chart.org">See the live covid-19 chart at
 covid19chart.org</a>.
 
 <img src="http://covid19chart.org/image/covid19chart_site_image.png">
