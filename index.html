@@ -1,11 +1,12 @@
 <!doctype html>
 <html>
 <head>
-<title>COVID-19 Chart Maker</title>
+<title>COVID-19 Chart by State, County, and Country</title>
 <meta name="description"
- content="Interactive chart of coronavirus cases over time.">
+ content="Interactive chart of coronavirus cases over time, comparing states, counties, and countries around the world.">
 <meta property="og:url" content="https://covid19chart.org/">
-<meta property="og:title" content="COVID-19 Chart Maker" />
+<meta property="og:title"
+ content="COVID-19 Chart by State, County, and Country" />
 <meta property="og:description"
  content="Interactive chart of coronavirus cases over time." />
 <meta property="og:image"
@@ -38,7 +39,7 @@ process = null; // process variable is needed by simple-suggest.
 <script src="lib/chartist-plugin-legend.js"></script> <!-- custom clicks -->
 <script src="lib/chartist-logaxis.js"></script> <!-- packaged standalone -->
 <script src="lib/chartist-print.js"></script> <!-- relayout when printing -->
-<script src="lib/load_csse.js?v=5"></script> <!-- JHU CSSE loader -->
+<script src="lib/load_csse.js?v=7"></script> <!-- JHU CSSE loader -->
 <script src="lib/load_cds.js?v=2"></script> <!-- JHU CSSE loader -->
 <script src="lib/population.js"></script> <!-- population per region -->
 <script src="lib/utils.js"></script> <!-- Date and csv utilities -->
@@ -102,20 +103,22 @@ select { margin-top: 1px; margin-bottom: 1px; }
 <form class="pane-menu" autocomplete="none">
 <h1>{{ chosen_domain == 'US' ? 'USA' :
        chosen_domain == 'Intl' ? 'International' : 'Local' }}
-COVID-19 <nobr>Chart <span v-if="chosen_advanced == '1'">API</span
-><span v-else>Maker</span>
+COVID-19 Live <nobr>Chart <span v-if="chosen_advanced == '1'">API</span
+>
 <a href="http://covid19chart.org"><img src="lib/logo.png" height="20px" style="vertical-align:bottom;margin-bottom:2px;"></a></nobr></h1>
-<p><span v-if="parseInt(chosen_top) > 0">Stats on {{ chosen_top }}
+<p><span v-if="parseInt(chosen_top) > 0">Showing {{ chosen_top }}
 {{ chosen_domain == 'US' ? 'states' :
    chosen_domain == 'Intl' ? 'countries outside China' :
    'localities in ' + chosen_domain }}
-with highest numbers.</span> Data are from
+with highest numbers.</span>
+Compare other countries, states, and counties by searching below.
+Click on the colored squares to focus on a locality.
+Hover on points for specific numbers.
+Data are from
 <a v-if="data_feed_name == 'cds'"
 href="https://coronadatascraper.com/">coronadatascraper.com</a>
 <a v-else
 href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
-Click on the legend to toggle a series.
-Hover on points for specific numbers.
 <a href="javascript:" v-on:click="print_page()">Print the chart.</a>
 </p>
 <div style="text-align:center" class="buttonrow">
@@ -137,6 +140,11 @@ Hover on points for specific numbers.
 <nobr><select v-model="chosen_scale" class="select-css">
   <option v-for="option in scale_choices" v-bind:value="option">
     {{ option }}
+  </option>
+</select>
+<select v-model="chosen_norm" class="select-css">
+  <option v-for="option in norm_choices" v-bind:value="option">
+    {{ option == 'none' ? 'norm' : '/' + option}}
   </option>
 </select>
 <select v-model="chosen_start" class="select-css">
@@ -407,7 +415,7 @@ function available_start_rules(extracted) {
   var data_series = extracted.series;
   var first_d = dates[0];
   var other_d = dates.slice(1).filter(
-    x => !!/^\d+\/1\/\d+$/.exec(x) || x == '3/23/20');
+    x => !!/^\d+\/1\/\d+$/.exec(x));
   var third_v = _.sortBy(data_series.map(
       x => _.max(x[1].map(x => x.value))), x => -x)[2];
   var gt_rules = [10, 30, 80, 100, 300, 1000].filter(
@@ -444,12 +452,6 @@ function apply_start_rule(start, norm, extracted) {
         return [label, null];
       }
     }
-    data_series.forEach(p => {
-      var lastPoint = _.last(p[1]);
-      if (lastPoint) {
-        lastPoint.pointLabel = lastPoint.meta.replace(/ \d+\/\d+\/\d+$/, '');
-      }
-    });
     data_series = data_series.map(x => shift_series(x[0], x[1], min_v));
     data_series = data_series.filter(x => !!x[1]);
     labels = _.range(0, _.max(data_series.map(x => x[1].length)));
@@ -498,8 +500,9 @@ function extract_data(csse, domain, field, stat, topcount, include) {
       get_multi_local_data(csse, field, localities).seriesmap,
       v => v.slice(first_nz));
   var top_states = _.toPairs(state_series)
-      .sort((x, y) => (score_series(stat, y[1])) - (score_series(stat, x[1]))
-           ).slice(0, parseInt(topcount));
+      .sort((x, y) => (score_series(stat, y[1])) - (score_series(stat, x[1])))
+      .filter(p => p[0].indexOf('Unassigned') < 0)
+      .slice(0, parseInt(topcount));
   var included = _.fromPairs(top_states);
   for (var inc of include.split(';')) {
     if (inc && !included.hasOwnProperty(inc)) {
@@ -507,9 +510,11 @@ function extract_data(csse, domain, field, stat, topcount, include) {
       top_states.push([inc, extra])
     }
   }
+  /* We used to include US totals on by-state breakdown.
   if (domain == 'US' && parseInt(topcount)) {
     top_states.unshift([domain, global_series]);
   }
+  */
   var described_series = top_states.map(p => [p[0], p[1].map((x, i) =>
      { return { meta: p[0] + ' ' + dates[i], value: x }; })]);
   return {
@@ -539,7 +544,8 @@ function xaxis_title(field, start) {
 // The extract data is plotted using chartist.js,
 // using the given scale.
 //////////////////////////////////////////////////////////////////////
-function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
+function plot_series(extract, stat, scale, norm, xaxis, yaxis,
+     select, updateSelect) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
   if (stat == 'deltas') {
@@ -587,7 +593,14 @@ function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
       right: 10,
     },
     plugins: [
-      Chartist.plugins.tooltip(),
+      Chartist.plugins.tooltip({
+        valueTransform: (v => {
+          v = v.replace(/(\.\d{2})\d*$/, '$1');
+          if (norm == 'first') { v = v + '&times; first day'; }
+          if (norm == 'pop') { v = v + ' per million'; }
+          return v;
+        }),
+      }),
       Chartist.plugins.ctAxisTitle({
         axisX: {
           axisTitle: xaxis,
@@ -612,7 +625,8 @@ function plot_series(extract, stat, scale, xaxis, yaxis, select, updateSelect) {
         },
       }),
       Chartist.plugins.ctPointLabels({
-        textAnchor: 'middle'
+        textAnchor: 'left',
+        labelOffset: { x: 7, y: 3 },
       })
     ]
   });
@@ -707,13 +721,13 @@ function createCssStyles() {
       .ct-chart:not(.ct-hover) .ct-legend .ct-series-${i},
       .ct-chart:not(.ct-hover) .ct-series-${String.fromCharCode(97+i)} {
         opacity: 1.0;
-        transition: opacity 1s linear;
+        transition: opacity 0.5s ease;
       }
       .ct-hover:not(.ct-hover-on-${i}) .ct-legend .ct-series-${i} {
         opacity: 0.5;
       }
       .ct-hover:not(.ct-hover-on-${i}) .ct-series-${String.fromCharCode(97+i)} {
-        opacity: 0.1;
+        opacity: 0.2;
       }
       .ct-hover.ct-hover-on-${i} .ct-series-${String.fromCharCode(97+i)} {
         z-index: 10;
@@ -737,12 +751,14 @@ theapp = new Vue({
   router: new VueRouter(),
   data: {
     csse: null,
+    local_us_state: null, // Determined via geolocation.
     available_localities: null,
     data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
     stat_choices: ['totals', 'deltas'],
     scale_choices: ['linear', 'log10'],
+    norm_choices: ['none', 'first', 'pop'],
     added_locality: null,
     selectStateDomain: null // The domain that the saved state is for
   },
@@ -751,7 +767,7 @@ theapp = new Vue({
   },
   computed: {
     domain_choices: function() {
-      var choices = ['US', 'Intl'];
+      var choices = ['Intl', 'US'];
       if (USA_STATES.hasOwnProperty(this.chosen_select)) {
         choices.push(this.chosen_select);
       } else if (parseInt(this.chosen_top) == 0 &&
@@ -759,6 +775,10 @@ theapp = new Vue({
         choices.push(this.chosen_include);
       } else if (USA_STATES.hasOwnProperty(this.chosen_domain )) {
         choices.push(this.chosen_domain);
+      }
+      if (this.local_us_state != null &&
+          choices[choices.length - 1] != this.local_us_state) {
+        choices.push(this.local_us_state);
       }
       return choices;
     },
@@ -815,11 +835,15 @@ theapp = new Vue({
       var ordered = _.defaults({
         series: reorderSeriesForColorStability(normalized.series)
       }, shifted);
+      ordered.series.forEach(p => {
+        var lastPoint = _.last(p[1].filter(v => v.value > 0));
+        if (lastPoint) { lastPoint.pointLabel = p[0]; }
+      });
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale, this.chosen_norm);
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
-      plot_series(ordered, this.chosen_stat, this.chosen_scale,
+      plot_series(ordered, this.chosen_stat, this.chosen_scale, this.chosen_norm,
           xtitle, ytitle,
           this.chosen_select,
           s => { this.chosen_select = s; });
@@ -962,15 +986,31 @@ function add_to_semilist(semilist, item) {
   return semilist;
 }
 
+function svgstr(s) {
+  if (s.baseVal) { s = s.baseVal; }
+  return s;
+}
 function clear_hover_classes(element) {
-  $(element).removeClass($(element).prop('class').split(/\s+/).filter(
+  $(element).removeClass($(element).prop('className').split(/\s+/).filter(
       c => c.startsWith('ct-hover')).join(' '));
 }
-$('body').on('mouseleave mousedown', '.ct-chart .ct-legend li', (e) => {
+$('body').on('mouseleave mousedown',
+  '.ct-chart .ct-legend li, .ct-chart g.ct-series',
+  (e) => {
   clear_hover_classes($(e.target).closest('.ct-chart'));
 });
-$('body').on('mouseenter', '.ct-chart .ct-legend li', (e) => {
-  var hc = $(e.target).prop('class').replace('ct-series', 'ct-hover-on');
+$('body').on('mouseenter',
+  '.ct-chart .ct-legend li, .ct-chart g.ct-series',
+  (e) => {
+  var $target = $(e.target);
+  if ($target.closest('g.ct-series').length) {
+    $target = $target.closest('g.ct-series'); // svg case.
+  }
+  // create the "ct-hover-on-#" class name corresponding to the target's
+  // ct-series-# class name.  svg elements have ct-series-[a-z] to convert.
+  var hc = svgstr($target.prop('className'))
+    .replace('ct-series-','ct-hover-on-').replace('ct-series ', '')
+    .replace(/([a-z])$/, x => x.charCodeAt(0) - 97);
   var inactive = $(e.target).closest('.inactive').length > 0;
   if (!inactive) {
     $(e.target).closest('.ct-chart').addClass('ct-hover ' + hc);
@@ -991,6 +1031,12 @@ load_feed_data().then(d => {
   all_localities = get_all_localities(d);
   theapp.available_localities = all_localities;
   theapp.draw_chart();
+});
+
+$.getJSON('https://ipapi.co/json/', (geo) => {
+  if (geo.country == 'US' && USA_STATES.hasOwnProperty(geo.region_code)) {
+    theapp.local_us_state = geo.region_code;
+  }
 });
 
 </script>

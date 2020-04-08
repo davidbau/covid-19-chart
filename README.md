@@ -7,7 +7,7 @@ into an interactive chart with both log and linear options,
 breakouts by state, and graphs of changes from day to day of
 reported deaths and confirmed cases.
 
-<a href="https://covid19chart.org">See the live chart at
+<a href="https://covid19chart.org">See the live covid-19 chart at
 covid19chart.org</a>.
 
 <img src="http://covid19chart.org/image/covid19chart_site_image.png">
@@ -53,6 +53,6 @@ this <a href="http://davidbau.com/archives/2020/03/25/covid19_chart_api.html">bl
 
 Acknowledgements
 ----------------
-Thanks to <a href="http://blog.davidebbo.com/about/">David Ebbo</a> for improving the selection UI!
+Thanks to <a href="http://blog.davidebbo.com/about/">David Ebbo</a> for improving the selection UI, and thanks to <a href="https://www.nytimes.com/2020/02/22/crosswords/daily-puzzle-2020-02-23.html">David Maymudes</a> for adding per-population normalization!
 
 Thanks to the support of <a href="https://quest.mit.edu/">MIT Quest</a>.
