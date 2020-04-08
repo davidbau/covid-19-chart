@@ -148,7 +148,7 @@ Hover on points for specific numbers.
 <vue-simple-suggest :list="available_localities" ref="suggest"
  placeholder="Pick your own localities, one at a time"
 :filter-by-query="true" v-model="added_locality"
-@select="add_locality()"></vue-simple-suggest
+select="add_locality()"></vue-simple-suggest
 ><button v-on:click="reset"><span v-if="!chosen_select">Reset</span
 ><span v-else>Clean up</span></button>
 </div>
@@ -426,17 +426,22 @@ function allowable_start_rule(extracted, rule) {
   }
   return false;
 }
-function apply_start_rule(start, extracted) {
+function apply_start_rule(start, norm, extracted) {
   var labels = extracted.labels;
   var data_series = extracted.series;
   if (start.startsWith('>=')) {
     var min_v = parseInt(start.slice(2));
-    function shift_series(s, min) {
+    function shift_series(label, s, min) {
+      if (norm == 'pop') {
+        if (label in POPULATION) {
+          min *= POPULATION[label] / 1000000;
+        }
+      }
       var first_i = _.findIndex(s, x => x != null && x.value >= min);
       if (first_i >= 0) {
-        return s.slice(first_i);
+        return [label, s.slice(first_i)];
       } else {
-        return null;
+        return [label, null];
       }
     }
     data_series.forEach(p => {
@@ -445,7 +450,7 @@ function apply_start_rule(start, extracted) {
         lastPoint.pointLabel = lastPoint.meta.replace(/ \d+\/\d+\/\d+$/, '');
       }
     });
-    data_series = data_series.map(x => [x[0], shift_series(x[1], min_v)]);
+    data_series = data_series.map(x => shift_series(x[0], x[1], min_v));
     data_series = data_series.filter(x => !!x[1]);
     labels = _.range(0, _.max(data_series.map(x => x[1].length)));
     return {labels: labels, series: data_series};
@@ -805,7 +810,7 @@ theapp = new Vue({
       if (!allowable_start_rule(extract, this.chosen_start)) {
         this.chosen_start = this.start_choices[0];
       }
-      var shifted = apply_start_rule(this.chosen_start, extract);
+      var shifted = apply_start_rule(this.chosen_start, this.chosen_norm, extract);
       var normalized = apply_norm_rule(this.chosen_norm, shifted);
       var ordered = _.defaults({
         series: reorderSeriesForColorStability(normalized.series)
