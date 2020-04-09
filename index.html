@@ -531,10 +531,14 @@ function yaxis_title(field, stat, scale, norm) {
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
 }
-function xaxis_title(field, start) {
+function xaxis_title(field, start, norm) {
   if (start.startsWith('>=')) {
-     return 'Days since ' + start.slice(2) + 'th ' +
+    if (norm == 'pop') {
+      return 'Days since ' + start.slice(2) + ' per million ' + field;
+    } else {
+      return 'Days since ' + start.slice(2) + 'th ' +
          {confirmed: 'case', deaths: 'death'}[field];
+    }
   }
   return '';
 }
@@ -842,7 +846,8 @@ theapp = new Vue({
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale, this.chosen_norm);
-      var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
+      var xtitle = xaxis_title(this.chosen_series, this.chosen_start,
+          this.chosen_norm);
       plot_series(ordered, this.chosen_stat, this.chosen_scale, this.chosen_norm,
           xtitle, ytitle,
           this.chosen_select,
