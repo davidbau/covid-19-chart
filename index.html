@@ -193,7 +193,7 @@ Bare chart embed code:<br>
 <p>For policymakers, the chart can <a :href="'#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed&theme='+chosen_theme">compare exponental growth of coronavirus cases</a>.
 Select the logarithmic totals with a &gt;=100 starting threshold, so that day zero is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and thus the slopes, will reveal the differences.
 
-<p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a :href="'#/?scale=linear&stat=deltas&start=2%2F29%2F20&series=deaths&theme='+chosen_theme">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
+<p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a :href="'#/?scale=linear&stat=daily&start=3%2F1%2F20&series=deaths&theme='+chosen_theme">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
 
 <p>The graph you make will automatically update every day based on current data. Please share. And please isolate.
 
@@ -434,36 +434,37 @@ function allowable_start_rule(extracted, rule) {
   }
   return false;
 }
+function pad_array(a, pad_count) {
+  return _.concat(new Array(pad_count), a);
+}
 function apply_start_rule(start, norm, extracted) {
   var labels = extracted.labels;
   var data_series = extracted.series;
   if (start.startsWith('>=')) {
+    var first_day = labels.length;
     var min_v = parseInt(start.slice(2));
-    function shift_series(label, s, min) {
+    function shift_series(loc, s, min) {
       if (norm == 'pop') {
-        if (label in POPULATION) {
-          min *= POPULATION[label] / 1000000;
+        if (loc in POPULATION) {
+          min *= POPULATION[loc] / 1000000;
         }
       }
       var first_i = _.findIndex(s, x => x != null && x.value >= min);
       if (first_i >= 0) {
-        return [label, s.slice(first_i)];
+        return [loc, _.concat(new Array(first_day - first_i), s)];
       } else {
-        return [label, null];
+        return [loc, null];
       }
     }
     data_series = data_series.map(x => shift_series(x[0], x[1], min_v));
     data_series = data_series.filter(x => !!x[1]);
-    labels = _.range(0, _.max(data_series.map(x => x[1].length)));
-    return {labels: labels, series: data_series};
+    labels = _.range(-first_day,
+                 _.max(data_series.map(x => x[1].length)) - first_day);
+    return {labels: labels, series: data_series, first_day: first_day};
   }
   if (parse_date(start)) {
     var first_i = labels.indexOf(start);
-    if (first_i >= 0) {
-      labels = labels.slice(first_i);
-      data_series = data_series.map(x => [x[0], x[1].slice(first_i)]);
-    }
-    return {labels: labels, series: data_series};
+    return {labels: labels, series: data_series, first_day: first_i};
   }
   return {labels: labels, series: data_series};
 }
@@ -523,8 +524,12 @@ function extract_data(csse, domain, field, stat, topcount, include) {
   };
 }
 function yaxis_title(field, stat, scale, norm) {
-  var desc = {totals: 'Total cumulative ', deltas: 'Daily new '}[stat] +
-             {confirmed: 'confirmed cases', deaths: 'deaths'}[field] +
+  var stat_desc =
+      stat == 'totals' ? 'Total cumulative ' :
+      parse_delta(stat) == 1 ? 'Daily new ' :
+      parse_delta(stat) + '-day average of daily ';
+  var desc = stat_desc +
+             {confirmed: 'confirmed', deaths: 'deaths'}[field] +
              {'first': ', / first day',
               'pop': ' per million',
               'none': ''}[norm] +
@@ -552,15 +557,15 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
      select, updateSelect) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
-  if (stat == 'deltas') {
+  if (parse_delta(stat)) {
     // How many days back do we go to calculate the delta
-    const deltaInterval = 4;
+    const deltaInterval = parse_delta(stat);
     extract.series = _.map(extract.series, p => [p[0], _.map(p[1], (d, i) => {
       if (i == 0) { return null; }
-      var prevIndex = Math.max(0, i - deltaInterval);
+      var prevIndex = i - deltaInterval;
       var cur = (d ? d.value : 0),
           prev = (p[1][prevIndex] ? p[1][prevIndex].value : 0);
-      return _.defaults({value: (cur - prev) / (i - prevIndex)}, d);
+      return _.defaults({value: (cur - prev) / deltaInterval}, d);
     })]);
   }
   if (scale.startsWith('log')) {
@@ -569,12 +574,12 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
     })]);
   }
   chart = new Chartist.Line('#chart', {
-    labels: extract.labels.map(x => {
+    labels: extract.labels.slice(extract.first_day).map(x => {
       if (!x) return x;
       x = '' + x;
       return x.replace(/(\d+)\/(\d+)\/20$/, '$1/$2');
     }),
-    series: extract.series.map(x => x[1]),
+    series: extract.series.map(x => x[1].slice(extract.first_day)),
   }, {
     lineSmooth: Chartist.Interpolation.none({
       fillHoles: false
@@ -763,7 +768,7 @@ theapp = new Vue({
     data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
-    stat_choices: ['totals', 'deltas'],
+    stat_choices: ['totals', 'daily', '7day'],
     scale_choices: ['linear', 'log10'],
     norm_choices: ['none', 'first', 'pop'],
     added_locality: null,
@@ -837,13 +842,14 @@ theapp = new Vue({
       if (!allowable_start_rule(extract, this.chosen_start)) {
         this.chosen_start = this.start_choices[0];
       }
-      var shifted = apply_start_rule(this.chosen_start, this.chosen_norm, extract);
+      var shifted = apply_start_rule(
+          this.chosen_start, this.chosen_norm, extract);
       var normalized = apply_norm_rule(this.chosen_norm, shifted);
       var ordered = _.defaults({
         series: reorderSeriesForColorStability(normalized.series)
       }, shifted);
       ordered.series.forEach(p => {
-        var lastPoint = _.last(p[1].filter(v => v.value > 0));
+        var lastPoint = _.last(p[1].filter(v => v && v.value > 0));
         if (lastPoint) { lastPoint.pointLabel = p[0]; }
       });
 
@@ -851,7 +857,8 @@ theapp = new Vue({
           this.chosen_scale, this.chosen_norm);
       var xtitle = xaxis_title(this.chosen_series, this.chosen_start,
           this.chosen_norm);
-      plot_series(ordered, this.chosen_stat, this.chosen_scale, this.chosen_norm,
+      plot_series(ordered,
+          this.chosen_stat, this.chosen_scale, this.chosen_norm,
           xtitle, ytitle,
           this.chosen_select,
           s => { this.chosen_select = s; });
@@ -993,7 +1000,11 @@ function add_to_semilist(semilist, item) {
   }
   return semilist;
 }
-
+function parse_delta(s) {
+  var m = s.match(/^(?:deltas|daily|(\d*)day)$/);
+  if (!m) return null;
+  return parseInt(m[1]) || 1;
+}
 function svgstr(s) {
   if (s.baseVal) { s = s.baseVal; }
   return s;
