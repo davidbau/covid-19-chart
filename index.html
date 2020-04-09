@@ -434,20 +434,25 @@ function allowable_start_rule(extracted, rule) {
   }
   return false;
 }
-function apply_start_rule(start, extracted) {
+function apply_start_rule(start, norm, extracted) {
   var labels = extracted.labels;
   var data_series = extracted.series;
   if (start.startsWith('>=')) {
     var min_v = parseInt(start.slice(2));
-    function shift_series(s, min) {
+    function shift_series(label, s, min) {
+      if (norm == 'pop') {
+        if (label in POPULATION) {
+          min *= POPULATION[label] / 1000000;
+        }
+      }
       var first_i = _.findIndex(s, x => x != null && x.value >= min);
       if (first_i >= 0) {
-        return s.slice(first_i);
+        return [label, s.slice(first_i)];
       } else {
-        return null;
+        return [label, null];
       }
     }
-    data_series = data_series.map(x => [x[0], shift_series(x[1], min_v)]);
+    data_series = data_series.map(x => shift_series(x[0], x[1], min_v));
     data_series = data_series.filter(x => !!x[1]);
     labels = _.range(0, _.max(data_series.map(x => x[1].length)));
     return {labels: labels, series: data_series};
@@ -526,10 +531,14 @@ function yaxis_title(field, stat, scale, norm) {
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
 }
-function xaxis_title(field, start) {
+function xaxis_title(field, start, norm) {
   if (start.startsWith('>=')) {
-     return 'Days since ' + start.slice(2) + 'th ' +
+    if (norm == 'pop') {
+      return 'Days since ' + start.slice(2) + ' per million ' + field;
+    } else {
+      return 'Days since ' + start.slice(2) + 'th ' +
          {confirmed: 'case', deaths: 'death'}[field];
+    }
   }
   return '';
 }
@@ -825,7 +834,7 @@ theapp = new Vue({
       if (!allowable_start_rule(extract, this.chosen_start)) {
         this.chosen_start = this.start_choices[0];
       }
-      var shifted = apply_start_rule(this.chosen_start, extract);
+      var shifted = apply_start_rule(this.chosen_start, this.chosen_norm, extract);
       var normalized = apply_norm_rule(this.chosen_norm, shifted);
       var ordered = _.defaults({
         series: reorderSeriesForColorStability(normalized.series)
@@ -837,7 +846,8 @@ theapp = new Vue({
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale, this.chosen_norm);
-      var xtitle = xaxis_title(this.chosen_series, this.chosen_start);
+      var xtitle = xaxis_title(this.chosen_series, this.chosen_start,
+          this.chosen_norm);
       plot_series(ordered, this.chosen_stat, this.chosen_scale, this.chosen_norm,
           xtitle, ytitle,
           this.chosen_select,
