@@ -52,6 +52,9 @@ for k,v in data.items():
     k = k.replace(' Borough, ', ', ')
     if "population" in v.keys():
         pop[k] = v["population"]
+        # No idea why NYC populaton is wrong in the data.
+        if k == 'New York, NY':
+            pop[k] = 8400000
         present += 1
     else:
         print("no population for ", k)
