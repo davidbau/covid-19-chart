@@ -72,6 +72,7 @@ STATE_FROM_ABBREV = dict([[v,k] for k,v in USA_STATES.items()])
 mappings = {
   'United Kingdom of Great Britain and Northern Ireland': 'UK',
   'United States of America': 'US',
+  'United States': 'US',
   'Korea, Republic of': 'S Korea',
   'Korea (Democratic People\'s Republic of)': 'N Korea',
   'Virgin Islands (U.S.)': 'US Virgin Islands',
@@ -131,9 +132,12 @@ for row in cr:
 
         pop[key] = int(population)
 
-        if key == 'New York, NY':
-            pop[key] = 8400000
         present += 1
+
+# All of NYC reports as one locality.
+for c in ['Kings, NY', 'Queens, NY', 'Bronx, NY', 'Richmond, NY']:
+    pop['New York, NY'] += pop[c] - 1
+    pop[c] = 1 # avoid division-by-zero
 
 print(pop)
 with open('../population.js', 'w') as fp:

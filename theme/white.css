@@ -3,8 +3,9 @@ body {
  color: #222;
 }
 .ct-label {
-  fill: rgba(0,0,0,.6);
-  color: rgba(0,0,0,.6);
+  fill: #000;
+  color: #000;
+  opacity: 0.6;
 }
 .ct-axis-title {
   fill: rgba(0,0,0,0.6);
