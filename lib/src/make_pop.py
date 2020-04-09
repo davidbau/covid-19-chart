@@ -111,6 +111,9 @@ for row in cr:
         country = country_map[country]
     if state in STATE_FROM_ABBREV:
         state = STATE_FROM_ABBREV[state]
+    if region == 'New York City':
+        region = 'New York'
+        
     if population and population != 'Population':
         key = ''
         if region:
