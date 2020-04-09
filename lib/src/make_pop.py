@@ -8,6 +8,7 @@ with open('country-slim3.json') as f:
 mappings = {
   'United Kingdom of Great Britain and Northern Ireland': 'UK',
   'United States of America': 'US',
+  'United States': 'US',
   'Korea, Republic of': 'S Korea',
   'Korea (Democratic People\'s Republic of)': 'N Korea',
   'Virgin Islands (U.S.)': 'US Virgin Islands',
@@ -41,21 +42,35 @@ pop = {}
 present = 0
 absent = 0
 
-for k,v in data.items():
+for k, v in data.items():
     if k in country_map:
         k = country_map[k]
-    k = k.replace(', USA', '')
-    k = k.replace(' County, ', ', ')
-    k = k.replace(' Parish, ', ', ')
-    k = k.replace(' Parish, ', ', ')
-    k = k.replace(' City And Borough, ', ', ')
-    k = k.replace(' Borough, ', ', ')
+    elif v['country'] in ['United States', 'USA']:
+        if 'stateId' in v:
+          state = v['stateId'].replace('iso2:US-', '')
+          if v['level'] == 'county':
+             c = v['county']
+             c = c.replace(' County', '')
+             c = c.replace(' Parish', '')
+             c = c.replace(' City and Borough', '')
+             c = c.replace(' Borough', '')
+             c = c.replace(' District', '')
+             c = c.replace(' Census Area', '')
+             c = c.replace(' City', '')
+             k = c + ', ' + state
+          elif v['level'] == 'state':
+             k = state
     if "population" in v.keys():
         pop[k] = v["population"]
         present += 1
     else:
         print("no population for ", k)
         absent += 1
+
+# All of NYC reports as one locality.
+for c in ['Kings, NY', 'Queens, NY', 'Bronx, NY', 'Richmond, NY']:
+    pop['New York, NY'] += pop[c] - 1
+    pop[c] = 1 # avoid division-by-zero
 
 print(pop)
 with open('../population.js', 'w') as fp:

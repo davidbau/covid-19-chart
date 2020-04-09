@@ -381,7 +381,8 @@ function apply_norm_rule(rule, extracted) {
   if (rule == 'none') { return extracted; }
   if (rule == 'first') {
     extracted.series = extracted.series.map(s => {
-      var first_pos_val = s[1].filter(d => d.value > 0)[0].value || 1;
+      var first_pos_val = s[1].slice(extracted.first_day)
+                              .filter(d => d && d.value > 0)[0].value || 1;
       return [s[0], s[1].map(
           d => d && _.defaults({
             meta: d.meta + ' (' + d.value + ')',
@@ -390,13 +391,13 @@ function apply_norm_rule(rule, extracted) {
     });
   }
   if (rule == 'pop') {
-    extracted.series = extracted.series.map(s => {
-      return [s[0], s[0] in POPULATION ? s[1].map(
+    extracted.series = extracted.series
+      .filter(s => s[0] in POPULATION)
+      .map(s => [s[0], s[1].map(
           d => d && _.defaults({
             meta: d.meta + ' (' + d.value + ')',
             value: +(d.value * 1000000 / POPULATION[s[0]]).toFixed(1)
-          }, d)) : {}];
-    });
+          }, d))])
   }
   return extracted;
 }
