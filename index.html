@@ -747,8 +747,8 @@ function createCssStyles() {
       }
       .ct-hover.ct-hover-on-${i}
           .ct-series.ct-series-${String.fromCharCode(97+i)} text.ct-label {
-        fill: #000;
         font-weight: bold;
+        opacity: 1.0;
       }`;
     document.getElementsByTagName('head')[0].appendChild(style);
   }

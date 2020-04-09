@@ -2,6 +2,11 @@ body {
  background: #FFF1E3;
  color: #333;
 }
+.ct-label {
+  fill: #000;
+  color: #000;
+  opacity: 0.5;
+}
 .ct-axis-title {
   fill: rgba(0,0,0,0.4);
   color: rgba(0,0,0,0.4);
