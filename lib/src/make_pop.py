@@ -135,9 +135,13 @@ for row in cr:
         present += 1
 
 # All of NYC reports as one locality.
-for c in ['Kings, NY', 'Queens, NY', 'Bronx, NY', 'Richmond, NY']:
-    pop['New York, NY'] += pop[c] - 1
-    pop[c] = 1 # avoid division-by-zero
+if True:
+    # JHU nums seem to came from 2019-07-01 estimates, but JHU's manhatten
+    # population of 5+million is a weird number of unknown origin.
+    # Erase all the boroughs and put the total on manhattan.
+    for c in ['Kings, NY', 'Queens, NY', 'Bronx, NY', 'Richmond, NY']:
+        del pop[c]
+    pop['New York, NY'] = 8336817 # 2019-07-01 estimate for all 5 boroughs
 
 print(pop)
 with open('../population.js', 'w') as fp:
