@@ -162,11 +162,11 @@ href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
 </div>
 </div>
 </form
-><div id="chart" class="pane-chart ct-chart ct-perfect-fourth"></div
+><div id="chart" :class="['pane-chart', 'ct-chart', 'ct-' + chosen_ratio]"></div
 ><div class="pane-credit">
 <div v-if="chosen_advanced == '1'">
 <p>
-Customized charts are directly linkable by URL.  URL parameters can be edited directly, or in the form below.  To plot a custom set of states or countries, use the "include" field; to omit the top 10, reduce the "top" field to zero.  Make bare plots for embedding with "bare=1".
+Customized charts are directly linkable by URL.  URL parameters can be edited directly, or in the form below.
 </p>
 <table>
 <tr><td>Domain:</td><td><input v-model.lazy="chosen_domain"> (US/Intl)</td></tr>
@@ -179,6 +179,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td>Include:</td><td><input v-model.lazy="chosen_include"> (';' between states)</td></tr>
 <tr><td>Select:</td><td><input v-model.lazy="chosen_select"> (';' between states)</td></tr>
 <tr><td>Theme:</td><td><input v-model.lazy="chosen_theme"> (white/dark/paper)</td></tr>
+<tr><td>Ratio:</td><td><input v-model.lazy="chosen_ratio"> (square/<a href="https://github.com/gionkunz/chartist-js/blob/8ae511b85956d6f93f38619d85bc045aa51bcf2e/site/styles/modules/_scale.scss#L1-L16">octave...</a>)</td></tr>
 <tr><td>Advanced:</td><td> <input v-model.lazy="chosen_advanced"> (1 or 0)</td></tr>
 <tr><td>Bare:</td><td> <input v-model.lazy="chosen_bare"> (1 or 0)</td></tr>
 <tr><td colspan=2">
@@ -823,6 +824,7 @@ theapp = new Vue({
     chosen_theme: url_property('theme', 'paper'),
     chosen_bare: url_property('bare', '0', true),
     chosen_advanced: url_property('advanced', '0'),
+    chosen_ratio: url_property('ratio', 'perfect-fourth'),
   },
   watch: {
     chosen_domain: function(val) {
