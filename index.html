@@ -162,7 +162,7 @@ href="https://github.com/CSSEGISandData/COVID-19/">Johns Hopkins CSSE</a>.
 </div>
 </div>
 </form
-><div id="chart" :class="['pane-chart', 'ct-chart', 'ct-' + chosen_ratio]"></div
+><div id="chart" :class="['pane-chart', 'ct-chart', ratio_class]"></div
 ><div class="pane-credit">
 <div v-if="chosen_advanced == '1'">
 <p>
@@ -179,7 +179,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <tr><td>Include:</td><td><input v-model.lazy="chosen_include"> (';' between states)</td></tr>
 <tr><td>Select:</td><td><input v-model.lazy="chosen_select"> (';' between states)</td></tr>
 <tr><td>Theme:</td><td><input v-model.lazy="chosen_theme"> (white/dark/paper)</td></tr>
-<tr><td>Ratio:</td><td><input v-model.lazy="chosen_ratio"> (square/<a href="https://github.com/gionkunz/chartist-js/blob/8ae511b85956d6f93f38619d85bc045aa51bcf2e/site/styles/modules/_scale.scss#L1-L16">octave...</a>)</td></tr>
+<tr><td>Ratio:</td><td><input v-model.lazy="chosen_ratio"> (3/4, or <a href="https://github.com/gionkunz/chartist-js/blob/8ae511b85956d6f93f38619d85bc045aa51bcf2e/site/styles/modules/_scale.scss#L1-L16">octave...</a>)</td></tr>
 <tr><td>Advanced:</td><td> <input v-model.lazy="chosen_advanced"> (1 or 0)</td></tr>
 <tr><td>Bare:</td><td> <input v-model.lazy="chosen_bare"> (1 or 0)</td></tr>
 <tr><td colspan=2">
@@ -756,7 +756,31 @@ function createCssStyles() {
 }
 
 //////////////////////////////////////////////////////////////////////
-// Selection.
+// Chartist aspect ratio classes.
+//////////////////////////////////////////////////////////////////////
+
+var RATIO_CHOICES = {
+  'square': '1/1',
+  'minor-second': '15/16',
+  'major-second': '8/9',
+  'minor-third': '5/6',
+  'major-third': '4/5',
+  'perfect-fourth': '3/4',
+  'perfect-fifth': '2/3',
+  'minor-sixth': '5/8',
+  'golden-section': '1/1.618',
+  'major-sixth': '3/5',
+  'minor-seventh': '9/16',
+  'major-seventh': '8/15',
+  'octave': '1/2',
+  'major-tenth': '2/5',
+  'major-eleventh': '3/8',
+  'major-twelfth': '1/3',
+  'double-octave': '1/4',
+};
+
+//////////////////////////////////////////////////////////////////////
+// selection.
 // The vue.js app is used to manage the user's selection of different
 // options.
 //////////////////////////////////////////////////////////////////////
@@ -811,6 +835,21 @@ theapp = new Vue({
       return extract_data(this.csse, this.chosen_domain,
           this.chosen_series, this.chosen_stat,
           this.chosen_top, this.chosen_include);
+    },
+    ratio_class: function() {
+      if (this.chosen_ratio in RATIO_CHOICES) {
+        return 'ct-' + this.chosen_ratio;
+      }
+      var number = parse_frac(this.chosen_ratio);
+      if (number) {
+        var best = 'perfect-fourth', diff = Math.abs(number - 3/4);
+        for (var k in RATIO_CHOICES) {
+          var d = Math.abs(number - parse_frac(RATIO_CHOICES[k]));
+          if (d < diff) { best = k; diff = d; }
+        }
+        return 'ct-' + best;
+      }
+      return 'ct-perfect-fourth';
     },
     chosen_domain: url_property('domain', 'US'),
     chosen_series: url_property('series', 'confirmed'),
@@ -1007,6 +1046,10 @@ function parse_delta(s) {
   var m = s.match(/^(?:deltas|daily|(\d*)day)$/);
   if (!m) return null;
   return parseInt(m[1]) || 1;
+}
+function parse_frac(s) {
+  var m = s.match(/^([\d\.]+)(?:\/([\d\.]+))?$/);
+  return m && parseFloat(m[1]) / parseFloat(m[2] || 1);
 }
 function svgstr(s) {
   if (s.baseVal) { s = s.baseVal; }
