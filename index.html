@@ -191,14 +191,13 @@ Bare chart embed code:<br>
 </table>
 </div>
 <div v-else>
-<p>For policymakers, the chart can <a :href="'#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed&theme='+chosen_theme">compare exponental growth of coronavirus cases</a>.
-Select the logarithmic totals with a &gt;=100 starting threshold, so that day zero is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and thus the slopes, will reveal the differences.
+<p>For policymakers, the chart can <a :href="'#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed&theme='+chosen_theme">compare exponental growth of coronavirus cases on a log scale</a>, or visualize the <a :href="'#/?include=Italy%3BS%20Korea%3BJapan%3BSpain%3BChina&stat=growth&theme='+chosen_theme">exponential trends directly on a log-log scale</a>. Both these reval the similarities of epidemic in differnt parts of the world, and give a sense for whether specific local policies are succeding at decreasing exponential spread of the virus.  Plots can be normalized by population, so you can compare your small county to New York or S Korea.
 
 <p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a :href="'#/?scale=linear&stat=daily&start=3%2F1%2F20&series=deaths&theme='+chosen_theme">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
 
 <p>The graph you make will automatically update every day based on current data. Please share. And please isolate.
 
-<p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>, which reveals policy differences internationally.  It is an easy-to-modify HTML page (using chartist.js, vue.js, lodash.js); pull requests are welcome.
+<p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>. And the log-log view is adopted from the <a href="https://www.youtube.com/watch?v=54XLXg4fYsc">Minute Physics plot by Aatish Bhatia and Henry Reich</a>. This is an easy-to-modify HTML page (using chartist.js, vue.js, lodash.js); pull requests are welcome.
 </div>
 
 <p><a href="javascript:" v-on:click="chosen_advanced = 1 - chosen_advanced"
