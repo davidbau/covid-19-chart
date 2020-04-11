@@ -171,7 +171,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <table>
 <tr><td>Domain:</td><td><input v-model.lazy="chosen_domain"> (US/Intl)</td></tr>
 <tr><td>Series:</td><td><input v-model.lazy="chosen_series"> (confirmed/deaths)</td></tr>
-<tr><td>Stat:</td><td><input v-model.lazy="chosen_stat"> (totals/deltas)</td></tr>
+<tr><td>Stat:</td><td><input v-model.lazy="chosen_stat"> (totals/daily/7day/growth)</td></tr>
 <tr><td>Scale:</td><td><input v-model.lazy="chosen_scale"> (linear/log10)</td></tr>
 <tr><td>Norm:</td><td><input v-model.lazy="chosen_norm"> (none/first/pop)</td></tr>
 <tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=num, or m/d/y)</td></tr>
@@ -559,6 +559,7 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
      select, updateSelect) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
+  var isGrowthChart = (stat == 'growth');
   if (parse_delta(stat)) {
     // How many days back do we go to calculate the delta
     const deltaInterval = parse_delta(stat);
@@ -570,9 +571,23 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
       return _.defaults({value: (cur - prev) / deltaInterval}, d);
     })]);
   }
+  else if (isGrowthChart) {
+    // In this mode, We plot an x,y graph with x as the total count and 'y' as
+    // the weekly count (not the average for one day, unlike with 'deltas')
+    extract.series = _.map(extract.series, p => [p[0],_.map(p[1], (d, i) => {
+      var prevIndex = i - 7; // Use last week for 'x'
+      var cur = (d ? d.value : 0),
+          prev = (p[1][prevIndex] ? p[1][prevIndex].value : 0);
+      var point = _.defaults({ x: cur, y: (cur - prev) }, d);
+      delete point["value"]; // delete unwanted 'value' prop as we have x,y
+      return point;
+    })]);
+  }
   if (scale.startsWith('log')) {
+    // When using log scale, we need to make sure we don't end up with entries
+    // that are missing their 'value' (or 'x/y') properties, as that breaks it
     extract.series = _.map(extract.series, p => [p[0], _.map(p[1], d => {
-      return d && d.value && d.value > 0 ? d : null;
+      return d && (d.value || d.x) ? d : null;
     })]);
   }
   chart = new Chartist.Line('#chart', {
@@ -594,11 +609,15 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
         return index % 7  === (parse_date(extract.labels[0]) ?
             (extract.labels.length - 1) % 7 : 0) ? value : null;
       },
+      type: isGrowthChart ? Chartist.AutoScaleAxis : undefined,
+      scale: isGrowthChart ? scale : 'linear',
+      onlyInteger: true,
     },
     axisY: {
       showMinorGrid: true,
       type: Chartist.AutoScaleAxis,
       scale: scale,
+      onlyInteger: true,
     },
     chartPadding: {
       top: 50,
@@ -794,7 +813,7 @@ theapp = new Vue({
     data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
-    stat_choices: ['totals', 'daily', '7day'],
+    stat_choices: ['totals', 'daily', '7day', 'growth'],
     scale_choices: ['linear', 'log10'],
     norm_choices: ['none', 'first', 'pop'],
     added_locality: null,
