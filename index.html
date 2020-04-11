@@ -528,6 +528,7 @@ function extract_data(csse, domain, field, stat, topcount, include) {
 function yaxis_title(field, stat, scale, norm) {
   var stat_desc =
       stat == 'totals' ? 'Total cumulative ' :
+      stat == 'growth' ? 'Weekly new ' :
       parse_delta(stat) == 1 ? 'Daily new ' :
       parse_delta(stat) + '-day average of daily ';
   var desc = stat_desc +
@@ -538,7 +539,10 @@ function yaxis_title(field, stat, scale, norm) {
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
 }
-function xaxis_title(field, start, norm) {
+function xaxis_title(field, stat, scale, norm, start) {
+  if (stat == 'growth') {
+    return yaxis_title(field, 'totals', scale, norm);
+  }
   if (start.startsWith('>=')) {
     if (norm == 'pop') {
       return 'Days since ' + start.slice(2) + ' per million ' + field;
@@ -916,8 +920,8 @@ theapp = new Vue({
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale, this.chosen_norm);
-      var xtitle = xaxis_title(this.chosen_series, this.chosen_start,
-          this.chosen_norm);
+      var xtitle = xaxis_title(this.chosen_series, this.chosen_stat,
+          this.chosen_scale, this.chosen_norm, this.chosen_start);
       plot_series(ordered,
           this.chosen_stat, this.chosen_scale, this.chosen_norm,
           xtitle, ytitle,
