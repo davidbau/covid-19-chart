@@ -587,7 +587,7 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
       return point;
     })]);
   }
-  if (scale.startsWith('log')) {
+  if (scale.startsWith('log') || isGrowthChart) {
     // When using log scale, we need to make sure we don't end up with entries
     // that are missing their 'value' (or 'x/y') properties, as that breaks it
     extract.series = _.map(extract.series, p => [p[0], _.map(p[1], d => {
