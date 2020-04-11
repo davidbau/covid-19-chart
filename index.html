@@ -591,7 +591,8 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
     // When using log scale, we need to make sure we don't end up with entries
     // that are missing their 'value' (or 'x/y') properties, as that breaks it
     extract.series = _.map(extract.series, p => [p[0], _.map(p[1], d => {
-      return d && (d.value || (d.x && d.y)) ? d : null;
+      return d && (d.value && d.value > 0 || d.x && d.x > 0 && d.y && d.y > 0)
+        ? d : null;
     })]);
   }
   chart = new Chartist.Line('#chart', {
