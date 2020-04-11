@@ -609,8 +609,9 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
       gridMinor: 'ct-grid-minor'
     },
     axisX: {
-      labelInterpolationFnc: function skipLabels(value, index) {
-        return index % 7  === (parse_date(extract.labels[0]) ?
+      labelInterpolationFnc: (value, index) => {
+        return isGrowthChart && scale.startsWith('log') ? value :
+          index % 7  === (parse_date(extract.labels[0]) ?
             (extract.labels.length - 1) % 7 : 0) ? value : null;
       },
       type: isGrowthChart ? Chartist.AutoScaleAxis : undefined,
