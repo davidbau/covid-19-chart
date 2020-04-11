@@ -171,7 +171,7 @@ Customized charts are directly linkable by URL.  URL parameters can be edited di
 <table>
 <tr><td>Domain:</td><td><input v-model.lazy="chosen_domain"> (US/Intl)</td></tr>
 <tr><td>Series:</td><td><input v-model.lazy="chosen_series"> (confirmed/deaths)</td></tr>
-<tr><td>Stat:</td><td><input v-model.lazy="chosen_stat"> (totals/deltas)</td></tr>
+<tr><td>Stat:</td><td><input v-model.lazy="chosen_stat"> (totals/daily/7day/growth)</td></tr>
 <tr><td>Scale:</td><td><input v-model.lazy="chosen_scale"> (linear/log10)</td></tr>
 <tr><td>Norm:</td><td><input v-model.lazy="chosen_norm"> (none/first/pop)</td></tr>
 <tr><td>Start:</td><td><input v-model.lazy="chosen_start"> (>=num, or m/d/y)</td></tr>
@@ -191,14 +191,13 @@ Bare chart embed code:<br>
 </table>
 </div>
 <div v-else>
-<p>For policymakers, the chart can <a :href="'#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed&theme='+chosen_theme">compare exponental growth of coronavirus cases</a>.
-Select the logarithmic totals with a &gt;=100 starting threshold, so that day zero is the first day there are 100 cases in a state. Over time, if different states' policies have different effects on the growth of the virus, the exponents, and thus the slopes, will reveal the differences.
+<p>For policymakers, the chart can <a :href="'#/?start=%3E%3D100&scale=log10&stat=totals&series=confirmed&theme='+chosen_theme">compare exponental growth of coronavirus cases on a log scale</a>, or visualize the <a :href="'#/?include=Italy%3BS%20Korea%3BJapan%3BSpain%3BChina&stat=growth&theme='+chosen_theme">exponential trends directly on a log-log scale</a>. Both these reval the similarities of epidemic in differnt parts of the world, and give a sense for whether specific local policies are succeding at decreasing exponential spread of the virus.  Plots can be normalized by population, so you can compare your small county to New York or S Korea.
 
 <p>For doctors who must deal with the patients who walk into the ER and who who lie sick in ICU beds, the <a :href="'#/?scale=linear&stat=daily&start=3%2F1%2F20&series=deaths&theme='+chosen_theme">linear view of day-to-day changes</a> is more appropriate. To see these plots, switch to the 'delta linear' view in the current month. The spikes show why the panic is justified, and why minor policy changes have massive ramifications.
 
 <p>The graph you make will automatically update every day based on current data. Please share. And please isolate.
 
-<p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>, which reveals policy differences internationally.  It is an easy-to-modify HTML page (using chartist.js, vue.js, lodash.js); pull requests are welcome.
+<p>I made this plot to help my physician wife see summaries of US COVID-19 stats that are not being graphed in the press. The logarithmic view is inspired by <a href="https://www.google.com/search?q=John+Burn-Murdoch+covid-19">the FT COVID-19 plot by John Burn-Murdoch</a>. And the log-log view is adopted from the <a href="https://www.youtube.com/watch?v=54XLXg4fYsc">Minute Physics plot by Aatish Bhatia and Henry Reich</a>. This is an easy-to-modify HTML page (using chartist.js, vue.js, lodash.js); pull requests are welcome.
 </div>
 
 <p><a href="javascript:" v-on:click="chosen_advanced = 1 - chosen_advanced"
@@ -528,6 +527,7 @@ function extract_data(csse, domain, field, stat, topcount, include) {
 function yaxis_title(field, stat, scale, norm) {
   var stat_desc =
       stat == 'totals' ? 'Total cumulative ' :
+      stat == 'growth' ? 'Weekly new ' :
       parse_delta(stat) == 1 ? 'Daily new ' :
       parse_delta(stat) + '-day average of daily ';
   var desc = stat_desc +
@@ -538,7 +538,10 @@ function yaxis_title(field, stat, scale, norm) {
              (scale && scale.startsWith('log') ? ' (log scale)' : '');
   return desc;
 }
-function xaxis_title(field, start, norm) {
+function xaxis_title(field, stat, scale, norm, start) {
+  if (stat == 'growth') {
+    return yaxis_title(field, 'totals', scale, norm);
+  }
   if (start.startsWith('>=')) {
     if (norm == 'pop') {
       return 'Days since ' + start.slice(2) + ' per million ' + field;
@@ -559,6 +562,7 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
      select, updateSelect) {
   scale = scale || 'log10';
   if (chart) { chart.detach(); }
+  var isGrowthChart = (stat == 'growth');
   if (parse_delta(stat)) {
     // How many days back do we go to calculate the delta
     const deltaInterval = parse_delta(stat);
@@ -570,9 +574,24 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
       return _.defaults({value: (cur - prev) / deltaInterval}, d);
     })]);
   }
-  if (scale.startsWith('log')) {
+  else if (isGrowthChart) {
+    // In this mode, We plot an x,y graph with x as the total count and 'y' as
+    // the weekly count (not the average for one day, unlike with 'deltas')
+    extract.series = _.map(extract.series, p => [p[0],_.map(p[1], (d, i) => {
+      var prevIndex = i - 7; // Use last week for 'x'
+      var cur = (d ? d.value : 0),
+          prev = (p[1][prevIndex] ? p[1][prevIndex].value : 0);
+      var point = _.defaults({ x: cur, y: (cur - prev) }, d);
+      delete point["value"]; // delete unwanted 'value' prop as we have x,y
+      return point;
+    })]);
+  }
+  if (scale.startsWith('log') || isGrowthChart) {
+    // When using log scale, we need to make sure we don't end up with entries
+    // that are missing their 'value' (or 'x/y') properties, as that breaks it
     extract.series = _.map(extract.series, p => [p[0], _.map(p[1], d => {
-      return d && d.value && d.value > 0 ? d : null;
+      return d && (d.value && d.value > 0 || d.x && d.x > 0 && d.y && d.y > 0)
+        ? d : null;
     })]);
   }
   chart = new Chartist.Line('#chart', {
@@ -590,15 +609,20 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
       gridMinor: 'ct-grid-minor'
     },
     axisX: {
-      labelInterpolationFnc: function skipLabels(value, index) {
-        return index % 7  === (parse_date(extract.labels[0]) ?
+      labelInterpolationFnc: (value, index) => {
+        return isGrowthChart && scale.startsWith('log') ? value :
+          index % 7  === (parse_date(extract.labels[0]) ?
             (extract.labels.length - 1) % 7 : 0) ? value : null;
       },
+      type: isGrowthChart ? Chartist.AutoScaleAxis : undefined,
+      scale: isGrowthChart ? scale : 'linear',
+      onlyInteger: true,
     },
     axisY: {
       showMinorGrid: true,
       type: Chartist.AutoScaleAxis,
       scale: scale,
+      onlyInteger: true,
     },
     chartPadding: {
       top: 50,
@@ -794,7 +818,7 @@ theapp = new Vue({
     data_feed_name: data_feed_name,
     siteurl: window.location.protocol + '//' + window.location.host + '/',
     series_choices: ['confirmed', 'deaths'], // 'recovered' seems incomplete.
-    stat_choices: ['totals', 'daily', '7day'],
+    stat_choices: ['totals', 'daily', '7day', 'growth'],
     scale_choices: ['linear', 'log10'],
     norm_choices: ['none', 'first', 'pop'],
     added_locality: null,
@@ -897,8 +921,8 @@ theapp = new Vue({
 
       var ytitle = yaxis_title(this.chosen_series, this.chosen_stat,
           this.chosen_scale, this.chosen_norm);
-      var xtitle = xaxis_title(this.chosen_series, this.chosen_start,
-          this.chosen_norm);
+      var xtitle = xaxis_title(this.chosen_series, this.chosen_stat,
+          this.chosen_scale, this.chosen_norm, this.chosen_start);
       plot_series(ordered,
           this.chosen_stat, this.chosen_scale, this.chosen_norm,
           xtitle, ytitle,
