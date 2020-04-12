@@ -822,6 +822,7 @@ theapp = new Vue({
     scale_choices: ['linear', 'log10'],
     norm_choices: ['none', 'first', 'pop'],
     added_locality: null,
+    visible_localities: null,
     selectStateDomain: null // The domain that the saved state is for
   },
   updated: function() {
@@ -829,18 +830,16 @@ theapp = new Vue({
   },
   computed: {
     domain_choices: function() {
-      var choices = ['Intl', 'US'];
-      if (USA_STATES.hasOwnProperty(this.chosen_select)) {
-        choices.push(this.chosen_select);
-      } else if (parseInt(this.chosen_top) == 0 &&
-          USA_STATES.hasOwnProperty(this.chosen_include)) {
-        choices.push(this.chosen_include);
-      } else if (USA_STATES.hasOwnProperty(this.chosen_domain )) {
-        choices.push(this.chosen_domain);
+      var choices = ['Intl', 'US'], added = {};
+      function add(s) { if (!added[s]) { added[s] = 1; choices.push(s); } }
+      (this.visible_localities || []).forEach(s => {
+        if (USA_STATES.hasOwnProperty(s)) { add(s); }
+      });
+      if (USA_STATES.hasOwnProperty(this.chosen_domain)) {
+        add(this.chosen_domain);
       }
-      if (this.local_us_state != null &&
-          choices[choices.length - 1] != this.local_us_state) {
-        choices.push(this.local_us_state);
+      if (this.local_us_state != null) {
+        add(this.local_us_state);
       }
       return choices;
     },
@@ -928,6 +927,7 @@ theapp = new Vue({
           xtitle, ytitle,
           this.chosen_select,
           s => { this.chosen_select = s; });
+      this.visible_localities = extract.series.map(x => x[0]);
     }, 100),
     make_url: function(opts) {
       return this.siteurl + this.$router.resolve(
