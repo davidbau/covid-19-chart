@@ -71,15 +71,16 @@ STATE_FROM_ABBREV = dict([[v,k] for k,v in USA_STATES.items()])
 
 mappings = {
   'United Kingdom of Great Britain and Northern Ireland': 'UK',
+  'United Kingdom': 'UK',
   'United States of America': 'US',
   'United States': 'US',
   'Korea, Republic of': 'S Korea',
+  'Korea, South': 'S Korea',
   'Korea (Democratic People\'s Republic of)': 'N Korea',
+  'Korea, North': 'N Korea',
   'Virgin Islands (U.S.)': 'US Virgin Islands',
   'Virgin Islands (British)': 'British Virgin Islands',
   'Lao People\'s Democratic Republic': 'Laos',
-  'Bosnia and Herzegovina': 'Bosnia',
-  'Saint Vincent and the Grenadines': 'Saint Vincent',
 }
 
 def normalize(name):
@@ -110,6 +111,8 @@ for row in cr:
     population = row[11]
     if country in country_map:
         country = country_map[country]
+    if country in mappings:
+        country = mappings[country]
     if state in STATE_FROM_ABBREV:
         state = STATE_FROM_ABBREV[state]
     if region == 'New York City':
