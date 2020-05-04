@@ -890,6 +890,12 @@ theapp = new Vue({
   },
   watch: {
     chosen_domain: function(val) {
+      // When the domain is chosen, always show the top-10 regions
+      // for that domain.
+      this.chosen_top = 10;
+      // If the previous selection equals the new domain, then erase it.
+      // Otherwise, keep the selection along to keep showing the
+      // selected localities compared to the new set of regions.
       if (val == this.chosen_include ||
           !this.chosen_include && val == this.chosen_select) {
         this.chosen_include = '';
