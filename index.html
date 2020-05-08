@@ -594,6 +594,15 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
         ? d : null;
     })]);
   }
+  // Heuristic for making space for long legends.  Estimate number of
+  // characters that extend past the right edge.
+  var maxLegendNameExtension = _.max(extract.series.map(x =>
+      Math.max(2,   // min 2 chars.
+        x[0].length // actual characters, minus chars that fit inside plot...
+        - 200 *     // estimate plot as 200 chars wide.
+        (extract.labels.length - x[1].length) / (1 + extract.labels.length)
+      )));
+  var rightPadding = 8 + 6 * maxLegendNameExtension; // 6 points per char avg.
   chart = new Chartist.Line('#chart', {
     labels: extract.labels.slice(extract.first_day).map(x => {
       if (!x) return x;
@@ -628,7 +637,7 @@ function plot_series(extract, stat, scale, norm, xaxis, yaxis,
       top: 50,
       bottom: xaxis ? 10 : 0,
       left: 25,
-      right: 10,
+      right: rightPadding,
     },
     plugins: [
       Chartist.plugins.tooltip({
