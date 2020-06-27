@@ -1065,7 +1065,7 @@ function url_property(name, default_value, nav) {
   };
 }
 function score_series(stat, s) {
-  if (stat == 'deltas') {
+  if (parse_delta(stat)) {
     var last = _.map(s.slice(-3), d => parseInt(d || 0) || 0);
     return _.max(last) - _.min(last);
   } else {
