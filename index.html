@@ -853,7 +853,7 @@ theapp = new Vue({
       return choices;
     },
     start_choices: function() {
-      if (this.csse == null) { return ['1/1/20', '>=80', '>=1000']; }
+      if (this.csse == null) { return ['4/1/20', '>=80', '>=1000']; }
       var extract = this.extracted_data;
       var choices = available_start_rules(extract);
       if (this.chosen_start && choices.indexOf(this.chosen_start) < 0) {
@@ -885,10 +885,10 @@ theapp = new Vue({
     },
     chosen_domain: url_property('domain', 'US'),
     chosen_series: url_property('series', 'confirmed'),
-    chosen_stat: url_property('stat', 'totals'),
+    chosen_stat: url_property('stat', '7day'),
     chosen_scale: url_property('scale', 'log10'),
-    chosen_norm: url_property('norm', 'none'),
-    chosen_start: url_property('start', '>=80'),
+    chosen_norm: url_property('norm', 'pop'),
+    chosen_start: url_property('start', '4/1/20'),
     chosen_top: url_property('top', '10'),
     chosen_include: url_property('include', ''),
     chosen_select: url_property('select', ''),
